@@ -3,10 +3,13 @@
 - 实现可交互式设计、verilog一键式布局布线并预览
 ### Environment
 - python3.9: flask; plotly; flask_cors
+```
+pip install flask plotly flask_cors
+```
 - C++: json.hpp(if you want to improve and re-g++ TestRoute.exe&mos2json.exe)
 ### How to run the project
 click app.py or
-```cmd
+```
 python app.py
 ```
 then click chipdesigner.html (open it by a browser) and edit your chip(or circuit) on the website.
