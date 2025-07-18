@@ -1,0 +1,2521 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>芯片设计工具</title>
+    <style>
+        /* 原有样式保持不变 */
+        :root {
+            --primary: #1a73e8;
+            --primary-dark: #0d47a1;
+            --secondary: #00c853;
+            --dark-bg: #121212;
+            --panel-bg: #1e1e1e;
+            --grid-color: #333;
+            --text-primary: #e0e0e0;
+            --text-secondary: #9e9e9e;
+            --border-color: #333;
+            --transistor-n: #4fc3f7;
+            --transistor-p: #f06292;
+            --port-in: #81c784;
+            --port-out: #ff8a65;
+            --vcc: #f44336;
+            --gnd: #9e9e9e;
+            --wire-color: #ffd54f;
+            --via-color: #ff9800;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Roboto', sans-serif;
+        }
+        
+        body {
+            background-color: var(--dark-bg);
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            margin-right: 30px;
+        }
+        
+        .logo-icon {
+            font-size: 28px;
+            margin-right: 12px;
+        }
+        
+        .logo-text {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        
+        .toolbar {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+        }
+        
+        .btn.active {
+            background: var(--secondary);
+            box-shadow: 0 0 15px rgba(0, 200, 83, 0.4);
+        }
+        
+        .btn-icon {
+            font-size: 18px;
+        }
+        
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .sidebar {
+            width: 280px;
+            background-color: var(--panel-bg);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border-color);
+            overflow-y: auto;
+        }
+        
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .section-title::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background-color: var(--border-color);
+            margin-left: 10px;
+        }
+        
+        .components-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .component-item {
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .component-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            transform: translateY(-3px);
+        }
+        
+        .component-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .component-name {
+            font-size: 14px;
+            text-align: center;
+        }
+        
+        .layers-control {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .layer-option {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .layer-option:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .layer-option.active {
+            background: rgba(26, 115, 232, 0.2);
+            border-left: 3px solid var(--primary);
+        }
+        
+        .layer-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            margin-right: 12px;
+        }
+        
+        .layer-name {
+            font-size: 14px;
+            flex: 1;
+        }
+        
+        .layer-visibility {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        
+        .layer-visibility:hover {
+            opacity: 1;
+        }
+        
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background-color: #0a0a0a;
+            cursor: grab;
+        }
+        
+        .canvas-container.dragging {
+            cursor: grabbing;
+        }
+        
+        #circuit-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: var(--dark-bg);
+            background-image: 
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        
+        .zoom-controls {
+            position: absolute;
+            right: 20px;
+            bottom: 20px;
+            background-color: rgba(30, 30, 30, 0.8);
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            z-index: 5;
+        }
+        
+        .zoom-btn {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 6px;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        
+        .zoom-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .status-bar {
+            background-color: var(--panel-bg);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .mode-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .mode-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: var(--secondary);
+        }
+        
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        
+        .modal.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .modal-content {
+            background: var(--panel-bg);
+            width: 80%;
+            min-width: 800px;
+            height: 90%;
+            max-width: 90%;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .modal-header {
+            padding: 20px;
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .modal-body {
+            padding: 20px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        
+        .modal-footer {
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        .json-preview {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 15px;
+            height: calc(100% - 40px); /* 留出标题栏空间 */
+            flex: 1;
+            overflow-y: auto; /* 仅保留垂直滚动 */
+            overflow-x: hidden; /* 禁用水平滚动 */
+            white-space: pre;
+            line-height: 1.6;
+        }
+        
+        .file-import {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .file-input {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+        }
+        
+        .file-input:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+        }
+        
+        .btn-secondary {
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+        
+        /* Transistor styling */
+        .transistor {
+            stroke-width: 2;
+            cursor: move;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill-opacity: 0.2;
+        }
+        
+        .transistor.nmos {
+            stroke: var(--transistor-n);
+            fill: var(--transistor-n);
+        }
+        
+        .transistor.pmos {
+            stroke: var(--transistor-p);
+            fill: var(--transistor-p);
+        }
+        
+        .pin {
+            fill: #555;
+            stroke: #999;
+            stroke-width: 1;
+            cursor: pointer;
+            r: 5;
+        }
+        
+        .pin:hover {
+            fill: var(--wire-color);
+            stroke: #fff;
+            r: 6;
+        }
+        
+        .wire {
+            stroke-width: 2;
+            pointer-events: none;
+        }
+        
+        .via {
+            fill: var(--via-color);
+            stroke: #ff6d00;
+            stroke-width: 1;
+            r: 3;
+        }
+        
+        .port {
+            stroke-width: 2;
+            cursor: move;
+            fill-opacity: 0.2;
+        }
+        
+        .port.input {
+            stroke: var(--port-in);
+            fill: var(--port-in);
+        }
+        
+        .port.output {
+            stroke: var(--port-out);
+            fill: var(--port-out);
+        }
+        
+        .port.vcc {
+            stroke: var(--vcc);
+            fill: var(--vcc);
+        }
+        
+        .port.gnd {
+            stroke: var(--gnd);
+            fill: var(--gnd);
+        }
+        
+        .component-label {
+            fill: var(--text-primary);
+            font-size: 10px;
+            text-anchor: middle;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        /* 添加的样式用于连接指示 */
+        .connection-indicator {
+            stroke: #00ff00;
+            stroke-width: 2;
+            stroke-dasharray: 5,5;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.05);
+            border-bottom: 2px solid transparent;
+        }
+        
+        .tab.active {
+            border-bottom: 2px solid var(--primary);
+            background: rgba(26, 115, 232, 0.2);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        .module-container {
+            stroke: #4285F4;
+            stroke-width: 2;
+            fill: none;
+            stroke-dasharray: 5,5;
+        }
+        .module-label {
+            fill: #4285F4;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .fixed-wire {
+            stroke-width: 2;
+            stroke-dasharray: 5,3;
+            pointer-events: none;
+        }
+        .fixed-wire.metal1 {
+            stroke: #FFD54F; /* 金属层1 - 金色 */
+        }
+    
+        .fixed-wire.metal2 {
+            stroke: #FF9800; /* 金属层2 - 橙色 */
+        }
+    
+        .fixed-wire.metal3 {
+            stroke: #4FC3F7; /* 金属层3 - 蓝色 */
+        }
+    
+        .fixed-wire.metal4 {
+            stroke: #81C784; /* 金属层4 - 绿色 */
+        }
+    
+        .fixed-wire.metal5 {
+            stroke: #BA68C8; /* 金属层5 - 紫色 */
+        }
+    
+        .fixed-via {
+            fill: #FF5722; /* 过孔 - 红色 */
+            stroke: #E64A19;
+            stroke-width: 1;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <div class="logo-icon">⚡</div>
+            <div class="logo-text">ChipDesigner</div>
+        </div>
+        <div class="toolbar">
+            <button class="btn" id="verilog-btn">
+                <span class="btn-icon">📝</span> 编写Verilog
+            </button>
+            <button class="btn active" id="select-mode-btn">
+                <span class="btn-icon">🔧</span> 选择模式
+            </button>
+            <button class="btn" id="wire-mode-btn">
+                <span class="btn-icon">🔌</span> 连线模式
+            </button>
+            <button class="btn" id="export-btn">
+                <span class="btn-icon">📐</span> 进行布局
+            </button>
+            <button class="btn" id="import-btn">
+                <span class="btn-icon">📂</span> 导入文件
+            </button>
+            <button class="btn" id="delete-mode-btn">
+                <span class="btn-icon">🗑️</span> 删除模式
+            </button>
+            <button class="btn" id="show-all-layers">
+                <span class="btn-icon">👁️</span> 显示所有层
+            </button>
+        </div>
+    </div>
+    
+    <div class="main-container">
+        <div class="sidebar">
+            <div class="section-title">
+                <span>电路元件</span>
+            </div>
+            <div class="components-grid">
+                <div class="component-item" data-type="nmos">
+                    <div class="component-icon" style="color: var(--transistor-n);">N</div>
+                    <div class="component-name">NMOS 晶体管</div>
+                </div>
+                <div class="component-item" data-type="pmos">
+                    <div class="component-icon" style="color: var(--transistor-p);">P</div>
+                    <div class="component-name">PMOS 晶体管</div>
+                </div>
+                <div class="component-item" data-type="input">
+                    <div class="component-icon" style="color: var(--port-in);">→</div>
+                    <div class="component-name">输入端口</div>
+                </div>
+                <div class="component-item" data-type="output">
+                    <div class="component-icon" style="color: var(--port-out);">←</div>
+                    <div class="component-name">输出端口</div>
+                </div>
+                <div class="component-item" data-type="vcc">
+                    <div class="component-icon" style="color: var(--vcc);">+</div>
+                    <div class="component-name">电源 (VCC)</div>
+                </div>
+                <div class="component-item" data-type="gnd">
+                    <div class="component-icon" style="color: var(--gnd);">-</div>
+                    <div class="component-name">接地 (GND)</div>
+                </div>
+            </div>
+            
+            <div class="section-title">
+                <span>布线层 (点击切换显示)</span>
+            </div>
+            <div class="layers-control">
+                <div class="layer-option active" data-layer="metal1">
+                    <div class="layer-color" style="background-color: #ffd54f;"></div>
+                    <div class="layer-name">金属层 1 (水平)</div>
+                    <svg class="layer-visibility" viewBox="0 0 24 24" fill="white">
+                        <path d="M12 9c1.65 0 3 1.35 3 3s-1.35 3-3 3-3-1.35-3-3 1.35-3 3-3m0-4.5c5 0 9.27 3.11 11 7.5-1.73 4.39-6 7.5-11 7.5S2.73 16.39 1 12c1.73-4.39 6-7.5 11-7.5zM3.18 12c1.46 3.36 4.72 5.5 8.82 5.5s7.36-2.14 8.82-5.5C19.36 8.64 16.1 6.5 12 6.5S4.64 8.64 3.18 12z"/>
+                    </svg>
+                </div>
+                <div class="layer-option active" data-layer="metal2">
+                    <div class="layer-color" style="background-color: #ff9800;"></div>
+                    <div class="layer-name">金属层 2 (垂直)</div>
+                    <svg class="layer-visibility" viewBox="0 0 24 24" fill="white">
+                        <path d="M12 9c1.65 0 3 1.35 3 3s-1.35 3-3 3-3-1.35-3-3 1.35-3 3-3m0-4.5c5 0 9.27 3.11 11 7.5-1.73 4.39-6 7.5-11 7.5S2.73 16.39 1 12c1.73-4.39 6-7.5 11-7.5zM3.18 12c1.46 3.36 4.72 5.5 8.82 5.5s7.36-2.14 8.82-5.5C19.36 8.64 16.1 6.5 12 6.5S4.64 8.64 3.18 12z"/>
+                    </svg>
+                </div>
+                <div class="layer-option active" data-layer="metal3">
+                    <div class="layer-color" style="background-color: #4fc3f7;"></div>
+                    <div class="layer-name">金属层 3</div>
+                    <svg class="layer-visibility" viewBox="0 0 24 24" fill="white">
+                        <path d="M12 9c1.65 0 3 1.35 3 3s-1.35 3-3 3-3-1.35-3-3 1.35-3 3-3m0-4.5c5 0 9.27 3.11 11 7.5-1.73 4.39-6 7.5-11 7.5S2.73 16.39 1 12c1.73-4.39 6-7.5 11-7.5zM3.18 12c1.46 3.36 4.72 5.5 8.82 5.5s7.36-2.14 8.82-5.5C19.36 8.64 16.1 6.5 12 6.5S4.64 8.64 3.18 12z"/>
+                    </svg>
+                </div>
+                <div class="layer-option active" data-layer="metal4">
+                    <div class="layer-color" style="background-color: #81c784;"></div>
+                    <div class="layer-name">金属层 4</div>
+                    <svg class="layer-visibility" viewBox="0 0 24 24" fill="white">
+                        <path d="M12 9c1.65 0 3 1.35 3 3s-1.35 3-3 3-3-1.35-3-3 1.35-3 3-3m0-4.5c5 0 9.27 3.11 11 7.5-1.73 4.39-6 7.5-11 7.5S2.73 16.39 1 12c1.73-4.39 6-7.5 11-7.5zM3.18 12c1.46 3.36 4.72 5.5 8.82 5.5s7.36-2.14 8.82-5.5C19.36 8.64 16.1 6.5 12 6.5S4.64 8.64 3.18 12z"/>
+                    </svg>
+                </div>
+                <div class="layer-option active" data-layer="metal5">
+                    <div class="layer-color" style="background-color: #ba68c8;"></div>
+                    <div class="layer-name">金属层 5</div>
+                    <svg class="layer-visibility" viewBox="0 0 24 24" fill="white">
+                        <path d="M12 9c1.65 0 3 1.35 3 3s-1.35 3-3 3-3-1.35-3-3 1.35-3 3-3m0-4.5c5 0 9.27 3.11 11 7.5-1.73 4.39-6 7.5-11 7.5S2.73 16.39 1 12c1.73-4.39 6-7.5 11-7.5zM3.18 12c1.46 3.36 4.72 5.5 8.82 5.5s7.36-2.14 8.82-5.5C19.36 8.64 16.1 6.5 12 6.5S4.64 8.64 3.18 12z"/>
+                    </svg>
+                </div>
+            </div>
+            
+            <div class="section-title">
+                <span>电路信息</span>
+            </div>
+            <div class="module-info">
+                <div>晶体管数量: <span id="transistor-count">0</span></div>
+                <div>端口数量: <span id="port-count">0</span></div>
+                <div>连接数量: <span id="connection-count">0</span></div>
+                <div>金属层: <span id="layer-count">5</span></div>
+            </div>
+        </div>
+        
+        <div class="canvas-container">
+            <svg id="circuit-canvas" width="10000" height="10000"></svg>
+            
+            <div class="zoom-controls">
+                <button class="zoom-btn" id="zoom-in">+</button>
+                <button class="zoom-btn" id="zoom-out">-</button>
+                <button class="zoom-btn" id="zoom-reset">↺</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="status-bar">
+        <div class="mode-indicator">
+            <div class="mode-dot"></div>
+            <div>当前模式: <span id="current-mode">选择模式</span></div>
+        </div>
+        <div>坐标: <span id="cursor-position">(0, 0)</span> | 缩放: <span id="zoom-level">100%</span> | 网格: 20px | 当前层: <span id="current-layer">metal1</span></div>
+    </div>
+
+    <div class="modal" id="verilog-modal">
+        <div class="modal-content" style="width: 76%;">
+            <div class="modal-header">编写Verilog文件，需要布局的模块请命名为top_module</div>
+            <textarea id="verilog-editor" style="width: 100%; height: 80%; background: #1e1e1e; color: #e0e0e0; border: 1px solid #333; padding: 10px; font-family: monospace; font-size: 14px;"></textarea>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="close-verilog">取消</button>
+                <button class="btn btn-primary" id="save-verilog">保存并预览</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="export-modal">
+        <div class="modal-content", style="width: 60%; height: 60%;">
+            <div class="modal-header">导出电路设计</div>
+            <div class="modal-body">
+                <div class="tabs">
+                    <div class="tab active" data-tab="vjson">电路描述 (.v.json)</div>
+                </div>
+                
+                <div class="tab-content active" id="vjson-tab">
+                    <p>导出的JSON文件将包含当前电路的所有元件和连接关系。</p>
+                    <div class="json-preview" id="json-preview">
+{
+    "top_module": {
+        "type": "module",
+        "name": "top_module",
+        "ports": {
+            "input1": {
+                "type": "input",
+                "out": ["transistor1"]
+            },
+            "output1": {
+                "type": "output",
+                "in": ["transistor1"]
+            },
+            "VCC": {
+                "type": "vcc",
+                "out": ["transistor2"]
+            },
+            "GND": {
+                "type": "gnd",
+                "in": ["transistor1"]
+            }
+        },
+        "mosfets": {
+            "transistor1": {
+                "type": "nmos",
+                "drain": "output1",
+                "source": "GND",
+                "gate": "input1"
+            },
+            "transistor2": {
+                "type": "pmos",
+                "drain": "output1",
+                "source": "VCC",
+                "gate": "input1"
+            }
+        },
+        "subModules": {}
+    }
+}
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="layout-tab">
+                    <p>导出的布局文件包含元件的位置信息。</p>
+                    <div class="json-preview" id="layout-preview">
+{
+    "top_module": {
+        "inputPorts": ["input1"],
+        "isgnd": true,
+        "isvcc": true,
+        "layout": {
+            "height": 200,
+            "layer": 1,
+            "width": 300,
+            "x": 100,
+            "y": 100
+        },
+        "mosfets": {
+            "transistor1": {
+                "drain": "output1",
+                "gate": "input1",
+                "layout": {
+                    "height": 30,
+                    "layer": 1,
+                    "width": 40,
+                    "x": 150,
+                    "y": 150
+                },
+                "source": "GND",
+                "type": "nmos"
+            },
+            "transistor2": {
+                "drain": "output1",
+                "gate": "input1",
+                "layout": {
+                    "height": 30,
+                    "layer": 1,
+                    "width": 40,
+                    "x": 200,
+                    "y": 150
+                },
+                "source": "VCC",
+                "type": "pmos"
+            }
+        },
+        "name": "top_module",
+        "outputPorts": ["output1"],
+        "subModules": {},
+        "type": "module"
+    }
+}
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="route-tab">
+                    <p>导出的布线文件包含所有连线路径信息。</p>
+                    <div class="json-preview" id="route-preview">
+{
+    "top_module": {
+        "module_name": "top_module",
+        "name": "top_module",
+        "nets": [
+            {
+                "name": "net1",
+                "pins": [
+                    {
+                        "layer": 1,
+                        "x": 100,
+                        "y": 100
+                    },
+                    {
+                        "layer": 1,
+                        "x": 150,
+                        "y": 150
+                    }
+                ],
+                "segments": [
+                    {
+                        "end": {
+                            "x": 150,
+                            "y": 100
+                        },
+                        "layer": 1,
+                        "start": {
+                            "x": 100,
+                            "y": 100
+                        }
+                    },
+                    {
+                        "end": {
+                            "x": 150,
+                            "y": 150
+                        },
+                        "layer": 2,
+                        "start": {
+                            "x": 150,
+                            "y": 100
+                        }
+                    }
+                ],
+                "vias": [
+                    {
+                        "x": 150,
+                        "y": 100
+                    }
+                ]
+            }
+        ],
+        "subModules": {}
+    }
+}
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="close-export">取消</button>
+                <button class="btn btn-primary" id="download-json">下载文件</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="import-modal">
+        <div class="modal-content", style="width: 50%; height: 70%;">
+            <div class="modal-header">导入文件</div>
+            <div class="modal-body">
+                <div class="tabs">
+                    <div class="tab active" data-tab="layout-route">布局和布线</div>
+                </div>
+            
+                <div class="tab-content active" id="import-layout-route">
+                    <div class="file-import">
+                        <p>请同时选择布局文件和布线文件:</p>
+                    
+                        <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+                            <div style="flex: 1;">
+                                <p>布局文件 (Layout_after.json):</p>
+                                <div class="file-input" id="layout-file-drop" data-file-type="layout">
+                                    拖放文件到此处或点击选择
+                                </div>
+                                <input type="file" id="layout-file-input" accept=".json" style="display: none;">
+                            </div>
+                        
+                            <div style="flex: 1;">
+                                <p>布线文件 (Route_after.json):</p>
+                                <div class="file-input" id="route-file-drop" data-file-type="route">
+                                    拖放文件到此处或点击选择
+                                </div>
+                                <input type="file" id="route-file-input" accept=".json" style="display: none;">
+                            </div>
+                        </div>
+                    
+                        <div style="display: flex; gap: 20px;">
+                            <div style="flex: 1;">
+                                <p>布局文件预览:</p>
+                                <div class="json-preview" id="layout-import-preview" style="height: 200px;">
+                                    文件内容将显示在这里...
+                                </div>
+                            </div>
+                        
+                            <div style="flex: 1;">
+                                <p>布线文件预览:</p>
+                                <div class="json-preview" id="route-import-preview" style="height: 200px;">
+                                    文件内容将显示在这里...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="close-import">取消</button>
+                <button class="btn btn-primary" id="import-file">导入</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let currentMode = 'select'; // 'select' | 'wire' | 'delete'
+        let currentLayer = 'metal1';
+        let selectedComponent = null;
+        let wireStartPin = null;
+        let zoomLevel = 1.0;
+        let components = [];
+        let wires = [];
+        let vias = [];
+        let gridSize = 20;
+        let tempWire = null;
+        let currentExportType = 'vjson';
+        let currentImportType = 'vjson';
+        let importedLayoutJson = null;
+        let importedRouteJson = null;
+        let draggingComponent = null;
+        let startX, startY, componentStartX, componentStartY;
+        let connectedWires = [];
+        let layerVisibility = {
+            metal1: true,
+            metal2: true,
+            metal3: true,
+            metal4: true,
+            metal5: true
+        };
+        
+        // 添加画布平移功能变量
+        let panX = 0;
+        let panY = 0;
+        let isDraggingCanvas = false;
+        let lastClientX = 0;
+        let lastClientY = 0;
+        
+        // DOM 元素
+        const canvas = document.getElementById('circuit-canvas');
+        const cursorPosition = document.getElementById('cursor-position');
+        const zoomLevelElement = document.getElementById('zoom-level');
+        const currentModeElement = document.getElementById('current-mode');
+        const exportModal = document.getElementById('export-modal');
+        const importModal = document.getElementById('import-modal');
+        const currentLayerElement = document.getElementById('current-layer');
+        const canvasContainer = document.querySelector('.canvas-container');
+        const verilogTemplate = `module My_and(A, B, Y);
+input A, B;
+    output Y;
+    wire tmp;
+            
+    nmos(tmp, VCC, A);
+    nmos(Y, tmp, B);
+    pmos(Y, GND, A);
+    pmos(Y, GND, B);
+endmodule
+
+module My_or(A, B, Y);
+    input A, B;
+    output Y;
+    wire tmp;
+                
+    nmos(Y, VCC, A);
+    nmos(Y, VCC, B);
+    pmos(tmp, GND, A);
+    pmos(Y, tmp, B);
+endmodule
+
+module My_xor(A, B, Y);
+    input A, B;
+    output Y;
+    wire tmp1, tmp2, tmp3, tmp4;
+                
+    nmos(tmp1, GND, A);
+    nmos(Y, tmp1, B);
+    nmos(tmp2, GND, A);
+    nmos(Y, tmp2, B);
+    pmos(tmp3, VCC, A);
+    nmos(Y, tmp3, B);
+    nmos(tmp4, VCC, A);
+    pmos(Y, tmp4, B);
+endmodule
+
+module adder(A, B, Cin, D, Cout);
+    input A, B, Cin;
+    output D, Cout;
+    wire tmp_xor, tmp_and_1, tmp_and_2;
+                
+    My_xor f0(A, B, tmp_xor);
+    My_xor f1(Cin, tmp_xor, D);
+    My_and f2(A, B, tmp_and_1);
+    My_and f3(tmp_xor, Cin, tmp_and_2);
+    My_or f4(tmp_and_1, tmp_and_2, Cout);
+endmodule`;
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('verilog-editor').value = verilogTemplate;
+        });
+        // 新增事件监听器
+        document.getElementById('verilog-btn').addEventListener('click', showVerilogModal);
+        document.getElementById('close-verilog').addEventListener('click', hideVerilogModal);
+        document.getElementById('save-verilog').addEventListener('click', saveVerilog);
+        
+        function showVerilogModal() {
+            document.getElementById('verilog-modal').classList.add('active');
+        }
+        
+        function hideVerilogModal() {
+            document.getElementById('verilog-modal').classList.remove('active');
+        }
+        
+        
+        function saveVerilog() {
+            const verilogCode = document.getElementById('verilog-editor').value;
+            
+            // 发送到后端
+            fetch('http://localhost:5000/upload_verilog', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ verilog: verilogCode }),
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('网络响应不正常');
+                }
+                return response.json();
+            })
+            .then(data => {
+                alert('Verilog文件已发送处理！请耐心等待解析与布局完成');
+            })
+            .catch((error) => {
+                console.error('发送失败:', error);
+                alert('处理Verilog文件时出错: ' + error.message);
+            });
+        }
+        // 初始化
+        document.addEventListener('DOMContentLoaded', init);
+        
+        function init() {
+            setupEventListeners();
+            drawGrid();
+            updateStats();
+            updateLayerVisibility();
+            setupFileDropEvents();
+            applyTransform();
+        }
+        
+        function setupFileDropEvents() {
+            const layoutDrop = document.getElementById('layout-file-drop');
+            const layoutInput = document.getElementById('layout-file-input');
+            const routeDrop = document.getElementById('route-file-drop');
+            const routeInput = document.getElementById('route-file-input');
+            
+            // 布局文件
+            layoutDrop.addEventListener('click', () => layoutInput.click());
+            layoutDrop.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                layoutDrop.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
+            });
+            layoutDrop.addEventListener('dragleave', () => {
+                layoutDrop.style.backgroundColor = '';
+            });
+            layoutDrop.addEventListener('drop', (e) => {
+                e.preventDefault();
+                layoutDrop.style.backgroundColor = '';
+                if (e.dataTransfer.files.length) {
+                    layoutInput.files = e.dataTransfer.files;
+                    const event = new Event('change');
+                    layoutInput.dispatchEvent(event);
+                }
+            });
+            
+            // 布线文件
+            routeDrop.addEventListener('click', () => routeInput.click());
+            routeDrop.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                routeDrop.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
+            });
+            routeDrop.addEventListener('dragleave', () => {
+                routeDrop.style.backgroundColor = '';
+            });
+            routeDrop.addEventListener('drop', (e) => {
+                e.preventDefault();
+                routeDrop.style.backgroundColor = '';
+                if (e.dataTransfer.files.length) {
+                    routeInput.files = e.dataTransfer.files;
+                    const event = new Event('change');
+                    routeInput.dispatchEvent(event);
+                }
+            });
+        }
+
+        function setupEventListeners() {
+            // 模式切换
+            document.getElementById('select-mode-btn').addEventListener('click', () => setMode('select'));
+            document.getElementById('delete-mode-btn').addEventListener('click', () => setMode('delete'));
+            document.getElementById('wire-mode-btn').addEventListener('click', () => setMode('wire'));
+            document.getElementById('show-all-layers').addEventListener('click', toggleAllLayers);
+            
+            // 元件选择
+            document.querySelectorAll('.component-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    if (currentMode === 'select') {
+                        selectedComponent = item.dataset.type;
+                        document.querySelectorAll('.component-item').forEach(i => i.style.border = '');
+                        item.style.border = '2px solid var(--primary)';
+                    }
+                });
+            });
+            
+            // 图层选择和可见性切换
+            document.querySelectorAll('.layer-option').forEach(option => {
+                // 图层选择
+                option.addEventListener('click', (e) => {
+                    if (e.target.closest('.layer-visibility')) {
+                        // 点击的是可见性图标
+                        const layer = option.dataset.layer;
+                        layerVisibility[layer] = !layerVisibility[layer];
+                        updateLayerVisibility();
+                    } else {
+                        // 点击的是图层选项
+                        document.querySelectorAll('.layer-option').forEach(o => o.classList.remove('active'));
+                        option.classList.add('active');
+                        currentLayer = option.dataset.layer;
+                        currentLayerElement.textContent = currentLayer;
+                    }
+                });
+            });
+            
+            // 缩放控制
+            document.getElementById('zoom-in').addEventListener('click', () => zoom(1.2));
+            document.getElementById('zoom-out').addEventListener('click', () => zoom(0.8));
+            document.getElementById('zoom-reset').addEventListener('click', () => zoom(1.0, true));
+            
+            // 画布交互
+            canvasContainer.addEventListener('mousedown', handleCanvasMousedown);
+            canvasContainer.addEventListener('mousemove', handleCanvasMousemove);
+            canvasContainer.addEventListener('mouseup', handleCanvasMouseup);
+            canvasContainer.addEventListener('mouseleave', handleCanvasMouseup);
+            canvasContainer.addEventListener('click', handleCanvasClick);
+            canvasContainer.addEventListener('mousemove', handleCanvasMouseMove);
+            
+            // 导出功能
+            document.getElementById('export-btn').addEventListener('click', showExportModal);
+            document.getElementById('close-export').addEventListener('click', hideExportModal);
+            document.getElementById('download-json').addEventListener('click', downloadJson);
+            
+            // 导入功能
+            document.getElementById('import-btn').addEventListener('click', showImportModal);
+            document.getElementById('close-import').addEventListener('click', hideImportModal);
+            document.getElementById('import-file').addEventListener('click', importFile);
+            
+            // 导出标签切换
+            document.querySelectorAll('#export-modal .tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabId = tab.dataset.tab;
+                    document.querySelectorAll('#export-modal .tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    document.querySelectorAll('#export-modal .tab-content').forEach(c => c.classList.remove('active'));
+                    document.getElementById(`${tabId}-tab`).classList.add('active');
+                    currentExportType = tabId;
+                });
+            });
+            
+            // 文件选择变化事件
+            document.getElementById('layout-file-input').addEventListener('change', (e) => {
+                handleFileSelect(e, 'layout-import-preview', true);
+            });
+            document.getElementById('route-file-input').addEventListener('change', (e) => {
+                handleFileSelect(e, 'route-import-preview', false);
+            });
+            
+            // 添加鼠标滚轮缩放
+            canvasContainer.addEventListener('wheel', handleWheel, { passive: false });
+        }
+        
+        function handleWheel(e) {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? 0.8 : 1.2;
+            zoom(delta, false, e.clientX, e.clientY);
+        }
+        
+        function setMode(mode) {
+            currentMode = mode;
+            currentModeElement.textContent = 
+                mode === 'select' ? '选择模式' : 
+                mode === 'wire' ? '连线模式' : 
+                '删除模式';
+            
+            // 更新按钮状态
+            document.getElementById('select-mode-btn').classList.toggle('active', mode === 'select');
+            document.getElementById('wire-mode-btn').classList.toggle('active', mode === 'wire');
+            document.getElementById('delete-mode-btn').classList.toggle('active', mode === 'delete');
+            
+            // 重置选择状态
+            if (mode === 'wire') {
+                selectedComponent = null;
+                document.querySelectorAll('.component-item').forEach(i => i.style.border = '');
+            }
+        }
+        
+        function drawGrid() {
+            // 网格背景由CSS处理
+        }
+        
+        function handleCanvasMouseMove(e) {
+            const {x, y} = getCanvasCoords(e.clientX, e.clientY);
+            const gridX = Math.floor(x / gridSize) * gridSize;
+            const gridY = Math.floor(y / gridSize) * gridSize;
+            cursorPosition.textContent = `(${gridX}, ${gridY})`;
+        }
+        
+        function handleCanvasMousedown(e) {
+            // 处理画布拖动
+            if (e.button === 1 || (e.button === 0 && e.shiftKey)) { // 中键或Shift+左键
+                isDraggingCanvas = true;
+                lastClientX = e.clientX;
+                lastClientY = e.clientY;
+                canvasContainer.classList.add('dragging');
+                return;
+            }
+            
+            if (currentMode === 'select') {
+                const element = e.target.closest('[data-id]');
+                if (element) {
+                    draggingComponent = components.find(c => c.id === element.dataset.id);
+                    if (draggingComponent) {
+                        const {x, y} = getCanvasCoords(e.clientX, e.clientY);
+                        startX = x;
+                        startY = y;
+                        componentStartX = draggingComponent.x;
+                        componentStartY = draggingComponent.y;
+                        
+                        // 保存与当前元件相连的连线
+                        connectedWires = wires.filter(wire => 
+                            wire.start.parent === draggingComponent.id || wire.end.parent === draggingComponent.id
+                        );
+                    }
+                }
+            }
+        }
+
+        function handleCanvasMousemove(e) {
+            if (isDraggingCanvas) {
+                const dx = e.clientX - lastClientX;
+                const dy = e.clientY - lastClientY;
+                lastClientX = e.clientX;
+                lastClientY = e.clientY;
+                panX += dx;
+                panY += dy;
+                applyTransform();
+                return;
+            }
+            
+            if (draggingComponent) {
+                const {x, y} = getCanvasCoords(e.clientX, e.clientY);
+                const deltaX = x - startX;
+                const deltaY = y - startY;
+                
+                // 对齐到网格
+                draggingComponent.x = Math.round((componentStartX + deltaX) / gridSize) * gridSize;
+                draggingComponent.y = Math.round((componentStartY + deltaY) / gridSize) * gridSize;
+                
+                // 更新引脚位置
+                updatePinPositions(draggingComponent);
+                
+                // 清理旧渲染
+                document.querySelectorAll(`[data-id='${draggingComponent.id}']`).forEach(el => el.remove());
+                document.querySelectorAll(`.component-label[data-parent='${draggingComponent.id}']`).forEach(el => el.remove());
+                document.querySelectorAll(`.pin[data-parent='${draggingComponent.id}']`).forEach(el => el.remove());
+                
+                // 重新渲染元件
+                renderComponent(draggingComponent);
+                
+                // 更新连线的位置
+                updateConnectedWires();
+                
+            } else if (wireStartPin) {
+                // 绘制临时连接线
+                const {x, y} = getCanvasCoords(e.clientX, e.clientY);
+                const gridX = Math.floor(x / gridSize) * gridSize;
+                const gridY = Math.floor(y / gridSize) * gridSize;
+                
+                // 清除之前的临时线
+                if (tempWire) {
+                    tempWire.remove();
+                }
+                
+                // 绘制从起点到当前鼠标位置的新线
+                const ns = "http://www.w3.org/2000/svg";
+                tempWire = document.createElementNS(ns, 'line');
+                tempWire.setAttribute('x1', wireStartPin.x);
+                tempWire.setAttribute('y1', wireStartPin.y);
+                tempWire.setAttribute('x2', gridX);
+                tempWire.setAttribute('y2', gridY);
+                tempWire.setAttribute('class', 'connection-indicator');
+                canvas.appendChild(tempWire);
+            }
+        }
+        
+        // 更新与当前元件相连的连线
+        function updateConnectedWires() {
+            if (!draggingComponent) return;
+            
+            connectedWires.forEach(wire => {
+                // 删除旧的连线SVG元素
+                document.querySelectorAll(`[data-wire-id='${wire.id}']`).forEach(el => el.remove());
+                
+                // 更新连线的起点或终点位置（如果它们属于被移动的元件）
+                if (wire.start.parent === draggingComponent.id) {
+                    const pin = draggingComponent.pins.find(p => p.id === wire.start.id);
+                    if (pin) {
+                        wire.start.x = pin.x;
+                        wire.start.y = pin.y;
+                    }
+                }
+                if (wire.end.parent === draggingComponent.id) {
+                    const pin = draggingComponent.pins.find(p => p.id === wire.end.id);
+                    if (pin) {
+                        wire.end.x = pin.x;
+                        wire.end.y = pin.y;
+                    }
+                }
+                
+                // 重新计算线段和过孔
+                wire.segments = [
+                    { 
+                        start: {x: wire.start.x, y: wire.start.y}, 
+                        end: {x: wire.end.x, y: wire.start.y},
+                        layer: 'metal1' // 水平线段在metal1层
+                    },
+                    { 
+                        start: {x: wire.end.x, y: wire.start.y}, 
+                        end: {x: wire.end.x, y: wire.end.y},
+                        layer: 'metal2' // 垂直线段在metal2层
+                    }
+                ];
+                wire.vias = [{x: wire.end.x, y: wire.start.y}];
+                
+                // 重新渲染这条连线
+                renderWire(wire);
+            });
+        }
+
+        function handleCanvasMouseup(e) {
+            isDraggingCanvas = false;
+            canvasContainer.classList.remove('dragging');
+            
+            if (draggingComponent) {
+                // 更新连线的位置
+                updateConnectedWires();
+                
+                draggingComponent = null;
+            }
+            
+            // 移除临时连接线
+            if (tempWire) {
+                tempWire.remove();
+                tempWire = null;
+            }
+        }
+
+        function handleCanvasClick(e) {
+            const {x, y} = getCanvasCoords(e.clientX, e.clientY);
+            const gridX = Math.floor(x / gridSize) * gridSize;
+            const gridY = Math.floor(y / gridSize) * gridSize;
+            
+            // 删除模式
+            if (currentMode === 'delete') {
+                const element = e.target.closest('[data-id], [data-parent], [data-wire-id], [data-segment-id], [data-via-id]');
+                
+                if (!element) return;
+                
+                // 删除整个布线网络
+                if (element.hasAttribute('data-wire-id')) {
+                    const wireId = element.dataset.wireId;
+                    const wire = wires.find(w => w.id === wireId);
+                    
+                    if (wire) {
+                        // 删除所有相关SVG元素
+                        document.querySelectorAll(`[data-wire-id='${wireId}']`).forEach(el => el.remove());
+                        
+                        // 从数组中移除
+                        wires = wires.filter(w => w.id !== wireId);
+                        updateStats();
+                    }
+                    return;
+                }
+                
+                // 删除单个线段
+                if (element.hasAttribute('data-segment-id')) {
+                    const segmentId = element.dataset.segmentId;
+                    const wireId = element.dataset.wireId;
+                    
+                    // 从DOM中移除
+                    element.remove();
+                    
+                    // 从数据结构中移除
+                    const wire = wires.find(w => w.id === wireId);
+                    if (wire) {
+                        wire.segments = wire.segments.filter(seg => seg.id !== segmentId);
+                        updateStats();
+                    }
+                    return;
+                }
+                
+                // 删除单个过孔
+                if (element.hasAttribute('data-via-id')) {
+                    const viaId = element.dataset.viaId;
+                    const wireId = element.dataset.wireId;
+                    
+                    // 从DOM中移除
+                    element.remove();
+                    
+                    // 从数据结构中移除
+                    const wire = wires.find(w => w.id === wireId);
+                    if (wire) {
+                        wire.vias = wire.vias.filter(v => v.id !== viaId);
+                        updateStats();
+                    }
+                    return;
+                }
+                
+                // 删除元件
+                const componentId = element.dataset.id || element.dataset.parent;
+                const component = components.find(c => c.id === componentId);
+                
+                if (component) {
+                    // 删除连接到该元件的所有连线
+                    wires.forEach(wire => {
+                        if (wire.start.parent === componentId || wire.end.parent === componentId) {
+                            document.querySelectorAll(`[data-wire-id='${wire.id}']`).forEach(el => el.remove());
+                        }
+                    });
+                    wires = wires.filter(wire => !(wire.start.parent === componentId || wire.end.parent === componentId));
+                    
+                    // 删除元件
+                    components = components.filter(c => c.id !== componentId);
+                    document.querySelectorAll(`[data-id='${componentId}'], [data-parent='${componentId}'], .component-label[data-parent='${componentId}']`).forEach(el => el.remove());
+                    updateStats();
+                }
+                return;
+            }
+            
+            // 选择模式 - 放置元件
+            if (currentMode === 'select' && selectedComponent) {
+                placeComponent(selectedComponent, gridX, gridY);
+                return;
+            }
+            
+            // 连线模式
+            if (currentMode === 'wire') {
+                // 查找点击的引脚
+                const pin = findPinAt(gridX, gridY);
+                
+                if (pin) {
+                    if (wireStartPin) {
+                        // 确保不是同一个引脚
+                        if (wireStartPin.id !== pin.id) {
+                            createWire(wireStartPin, pin);
+                        }
+                        wireStartPin = null;
+                        
+                        // 移除临时线
+                        if (tempWire) {
+                            tempWire.remove();
+                            tempWire = null;
+                        }
+                    } else {
+                        wireStartPin = pin;
+                    }
+                }
+            }
+        }
+
+        function findPinAt(x, y) {
+            const tolerance = 10; // 点击容差范围
+            for (const comp of components) {
+                for (const pin of comp.pins) {
+                    const dx = Math.abs(pin.x - x);
+                    const dy = Math.abs(pin.y - y);
+                    if (dx < tolerance && dy < tolerance) {
+                        return {
+                            id: pin.id,
+                            x: pin.x,
+                            y: pin.y,
+                            parent: comp.id,
+                            type: pin.type
+                        };
+                    }
+                }
+            }
+            return null;
+        }
+        
+        // 在画布上放置元件
+        function placeComponent(type, x, y, name = null) {
+            const id = `comp_${Date.now()}`;
+            const component = { 
+                id, 
+                type, 
+                x, 
+                y, 
+                pins: [],
+                name: name || `${type}_${components.length + 1}`
+            };
+            
+            // 根据元件类型创建引脚
+            switch(type) {
+                case 'nmos':
+                case 'pmos':
+                    component.pins = [
+                        { id: `${id}_source`, type: 'source', offsetX: gridSize, offsetY: gridSize*2 },
+                        { id: `${id}_gate`, type: 'gate', offsetX: gridSize*3, offsetY: gridSize*3 },
+                        { id: `${id}_drain`, type: 'drain', offsetX: gridSize*5, offsetY: gridSize*2 }
+                    ];
+                    break;
+                case 'input':
+                case 'output':
+                case 'vcc':
+                case 'gnd':
+                    component.pins = [
+                        { id: `${id}_main`, type: 'main', offsetX: 0, offsetY: 0 }
+                    ];
+                    break;
+            }
+            
+            // 更新引脚位置
+            updatePinPositions(component);
+            
+            components.push(component);
+            renderComponent(component);
+            updateStats();
+        }
+
+        // 更新元件引脚位置
+        function updatePinPositions(component) {
+            component.pins.forEach(pin => {
+                pin.x = component.x + pin.offsetX;
+                pin.y = component.y + pin.offsetY;
+            });
+        }
+
+        // 创建新的连线
+        function createWire(startPin, endPin) {
+            const wireId = `wire_${Date.now()}`;
+            
+            const wire = {
+                id: wireId,
+                start: startPin,
+                end: endPin,
+                segments: [],
+                vias: []
+            };
+            
+            // 创建水平线段
+            const horizontalSegment = {
+                id: `${wireId}_seg1`,
+                start: {x: startPin.x, y: startPin.y},
+                end: {x: endPin.x, y: startPin.y},
+                layer: 'metal1'
+            };
+            
+            // 创建垂直线段
+            const verticalSegment = {
+                id: `${wireId}_seg2`,
+                start: {x: endPin.x, y: startPin.y},
+                end: {x: endPin.x, y: endPin.y},
+                layer: 'metal2'
+            };
+            
+            // 创建过孔
+            const via = {
+                id: `${wireId}_via1`,
+                x: endPin.x,
+                y: startPin.y
+            };
+            
+            wire.segments.push(horizontalSegment, verticalSegment);
+            wire.vias.push(via);
+            
+            wires.push(wire);
+            renderWire(wire);
+            updateStats();
+        }
+
+        // 渲染完整的布线
+        function renderWire(wire) {
+            const ns = "http://www.w3.org/2000/svg";
+            
+            // 渲染所有线段
+            wire.segments.forEach(segment => {
+                const line = document.createElementNS(ns, 'line');
+                line.setAttribute('x1', segment.start.x);
+                line.setAttribute('y1', segment.start.y);
+                line.setAttribute('x2', segment.end.x);
+                line.setAttribute('y2', segment.end.y);
+                line.setAttribute('class', `wire fixed-wire ${segment.layer}`);
+                line.setAttribute('data-wire-id', wire.id);
+                line.setAttribute('data-segment-id', segment.id);
+                canvas.appendChild(line);
+            });
+            
+            // 渲染所有过孔
+            wire.vias.forEach(via => {
+                const viaElement = document.createElementNS(ns, 'rect');
+                viaElement.setAttribute('x', via.x - 1.5);
+                viaElement.setAttribute('y', via.y - 1.5);
+                viaElement.setAttribute('width', 3);
+                viaElement.setAttribute('height', 3);
+                viaElement.setAttribute('class', 'fixed-via');
+                viaElement.setAttribute('fill', '#FF5722');
+                viaElement.setAttribute('data-wire-id', wire.id);
+                viaElement.setAttribute('data-via-id', via.id);
+                canvas.appendChild(viaElement);
+            });
+        }
+
+        function updatePinPositions(component) {
+            component.pins.forEach(pin => {
+                pin.x = component.x + pin.offsetX;
+                pin.y = component.y + pin.offsetY;
+            });
+        }
+        
+        function renderComponent(component) {
+            const ns = "http://www.w3.org/2000/svg";
+            let element;
+            
+            switch(component.type) {
+                case 'nmos':
+                    element = document.createElementNS(ns, 'path');
+                    // 绘制NMOS晶体管 (6x4 网格单位)
+                    const nmosPath = `M ${component.x},${component.y} 
+                                     L ${component.x + gridSize*6},${component.y} 
+                                     L ${component.x + gridSize*6},${component.y + gridSize*4} 
+                                     L ${component.x},${component.y + gridSize*4} 
+                                     L ${component.x},${component.y} 
+                                     M ${component.x + gridSize*3},${component.y + gridSize*3} 
+                                     L ${component.x + gridSize*3},${component.y + gridSize*4}`;
+                    element.setAttribute('d', nmosPath);
+                    element.setAttribute('class', `transistor nmos`);
+                    break;
+                case 'pmos':
+                    element = document.createElementNS(ns, 'path');
+                    // 绘制PMOS晶体管 (6x4 网格单位)
+                    const pmosPath = `M ${component.x},${component.y} 
+                                     L ${component.x + gridSize*6},${component.y} 
+                                     L ${component.x + gridSize*6},${component.y + gridSize*4} 
+                                     L ${component.x},${component.y + gridSize*4} 
+                                     L ${component.x},${component.y}
+                                     M ${component.x + gridSize*3},${component.y + gridSize*3} 
+                                     L ${component.x + gridSize*3},${component.y + gridSize*4}`;
+                    element.setAttribute('d', pmosPath);
+                    element.setAttribute('class', `transistor pmos`);
+                    break;
+                case 'input':
+                case 'output':
+                case 'vcc':
+                case 'gnd':
+                    element = document.createElementNS(ns, 'circle');
+                    element.setAttribute('cx', component.x);
+                    element.setAttribute('cy', component.y);
+                    element.setAttribute('r', 15);
+                    element.setAttribute('class', `port ${component.type}`);
+                    break;
+            }
+            
+            if (element) {
+                element.setAttribute('data-id', component.id);
+                canvas.appendChild(element);
+                
+                // 添加标签
+                const label = document.createElementNS(ns, 'text');
+                label.setAttribute('x', component.x);
+                label.setAttribute('y', component.type === 'nmos' || component.type === 'pmos' ? component.y + gridSize*5 : component.y + 25);
+                label.setAttribute('class', 'component-label');
+                label.setAttribute('data-parent', component.id);
+                label.textContent = component.name;
+                canvas.appendChild(label);
+                
+                // 渲染引脚
+                component.pins.forEach(pin => {
+                    const pinElement = document.createElementNS(ns, 'circle');
+                    pinElement.setAttribute('cx', pin.x);
+                    pinElement.setAttribute('cy', pin.y);
+                    pinElement.setAttribute('r', 5);
+                    pinElement.setAttribute('class', 'pin');
+                    pinElement.setAttribute('data-pin-type', pin.type);
+                    pinElement.setAttribute('data-parent', component.id);
+                    pinElement.setAttribute('data-pin-id', pin.id);
+                    canvas.appendChild(pinElement);
+                });
+            }
+        }
+        
+        function createWire(startPin, endPin) {
+            const wireId = `wire_${Date.now()}`;
+            
+            // 确定水平线段和垂直线段的层
+            const horizontalLayer = 'metal1';
+            const verticalLayer = 'metal2';
+            
+            const wire = {
+                id: wireId,
+                start: startPin,
+                end: endPin,
+                segments: [
+                    { 
+                        start: {x: startPin.x, y: startPin.y}, 
+                        end: {x: endPin.x, y: startPin.y},
+                        layer: horizontalLayer
+                    },
+                    { 
+                        start: {x: endPin.x, y: startPin.y}, 
+                        end: {x: endPin.x, y: endPin.y},
+                        layer: verticalLayer
+                    }
+                ],
+                vias: [{x: endPin.x, y: startPin.y}]
+            };
+            
+            wires.push(wire);
+            renderWire(wire);
+            updateStats();
+        }
+        
+        function renderWire(wire) {
+            const ns = "http://www.w3.org/2000/svg";
+            
+            // 绘制线段
+            wire.segments.forEach(segment => {
+                // 检查当前层是否可见
+                if (!layerVisibility[segment.layer]) return;
+                
+                const line = document.createElementNS(ns, 'line');
+                line.setAttribute('x1', segment.start.x);
+                line.setAttribute('y1', segment.start.y);
+                line.setAttribute('x2', segment.end.x);
+                line.setAttribute('y2', segment.end.y);
+                line.setAttribute('class', `wire fixed-wire ${segment.layer}`);
+                line.setAttribute('data-wire-id', wire.id);
+                canvas.appendChild(line);
+            });
+            
+            // 绘制过孔
+            wire.vias.forEach(via => {
+                const viaElement = document.createElementNS(ns, 'circle');
+                viaElement.setAttribute('cx', via.x);
+                viaElement.setAttribute('cy', via.y);
+                viaElement.setAttribute('r', 3);
+                viaElement.setAttribute('class', 'via');
+                viaElement.setAttribute('data-wire-id', wire.id);
+                canvas.appendChild(viaElement);
+            });
+        }
+        
+        function zoom(factor, reset = false, clientX, clientY) {
+            if (reset) {
+                zoomLevel = 1.0;
+                panX = 0;
+                panY = 0;
+            } else {
+                const oldZoom = zoomLevel;
+                zoomLevel *= factor;
+                zoomLevel = Math.max(0.2, Math.min(zoomLevel, 5.0));
+                
+                if (clientX && clientY) {
+                    const containerRect = canvasContainer.getBoundingClientRect();
+                    const x = clientX - containerRect.left;
+                    const y = clientY - containerRect.top;
+                    
+                    // 计算缩放中心相对于画布的位置
+                    const canvasX = (x - panX) / oldZoom;
+                    const canvasY = (y - panY) / oldZoom;
+                    
+                    // 调整平移量以保持缩放中心不变
+                    panX = x - canvasX * zoomLevel;
+                    panY = y - canvasY * zoomLevel;
+                }
+            }
+            
+            zoomLevelElement.textContent = `${Math.round(zoomLevel * 100)}%`;
+            applyTransform();
+        }
+        
+        function applyTransform() {
+            canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
+            canvas.style.transformOrigin = '0 0';
+        }
+        
+        function getCanvasCoords(clientX, clientY) {
+            const rect = canvasContainer.getBoundingClientRect();
+            const x = (clientX - rect.left - panX) / zoomLevel;
+            const y = (clientY - rect.top - panY) / zoomLevel;
+            return {x, y};
+        }
+        
+        function updateStats() {
+            const transistors = components.filter(c => c.type === 'nmos' || c.type === 'pmos').length;
+            const ports = components.filter(c => 
+                c.type === 'input' || c.type === 'output' || c.type === 'vcc' || c.type === 'gnd'
+            ).length;
+            
+            document.getElementById('transistor-count').textContent = transistors;
+            document.getElementById('port-count').textContent = ports;
+            document.getElementById('connection-count').textContent = wires.length;
+        }
+        
+        function updateLayerVisibility() {
+            // 更新所有连线的可见性
+            document.querySelectorAll('.wire').forEach(wire => {
+                const layer = Array.from(wire.classList).find(cls => 
+                    ['metal1', 'metal2', 'metal3', 'metal4', 'metal5'].includes(cls));
+                if (layer) {
+                    wire.style.display = layerVisibility[layer] ? '' : 'none';
+                }
+            });
+            
+            // 更新图层控制中的可见性图标
+            document.querySelectorAll('.layer-option').forEach(option => {
+                const layer = option.dataset.layer;
+                const visibilityIcon = option.querySelector('.layer-visibility');
+                if (visibilityIcon) {
+                    visibilityIcon.innerHTML = layerVisibility[layer] ? 
+                        '<path d="M12 9c1.65 0 3 1.35 3 3s-1.35 3-3 3-3-1.35-3-3 1.35-3 3-3m0-4.5c5 0 9.27 3.11 11 7.5-1.73 4.39-6 7.5-11 7.5S2.73 16.39 1 12c1.73-4.39 6-7.5 11-7.5zM3.18 12c1.46 3.36 4.72 5.5 8.82 5.5s7.36-2.14 8.82-5.5C19.36 8.64 16.1 6.5 12 6.5S4.64 8.64 3.18 12z"/>' : 
+                        '<path d="M12 6.5c2.76 0 5 2.24 5 5 0 .51-.1 1-.24 1.46l3.06 3.06c1.39-1.23 2.49-2.77 3.18-4.53C21.27 7.11 17 4 12 4c-1.27 0-2.49.2-3.64.57l2.17 2.17c.47-.14.96-.24 1.47-.24zM2.71 3.16a.996.996 0 0 0 0 1.41l1.97 1.97A11.892 11.892 0 0 0 1 12c1.73 4.39 6 7.5 11 7.5 1.52 0 2.97-.3 4.31-.82l2.72 2.72a.996.996 0 1 0 1.41-1.41L4.13 3.16c-.39-.39-1.03-.39-1.42 0zM12 15.5c-2.76 0-5-2.24-5-5 0-.77.18-1.5.49-2.14l1.57 1.57c-.03.18-.06.37-.06.57 0 1.66 1.34 3 3 3 .2 0 .38-.03.57-.07L14.14 15c-.64.32-1.37.5-2.14.5zm2.97-5.33a2.97 2.97 0 0 0-2.64-2.64l2.64 2.64z"/>';
+                }
+            });
+        }
+        
+        function toggleAllLayers() {
+            const allVisible = Object.values(layerVisibility).every(v => v);
+            Object.keys(layerVisibility).forEach(layer => {
+                layerVisibility[layer] = !allVisible;
+            });
+            updateLayerVisibility();
+        }
+        
+        function showExportModal() {
+            // 生成电路数据并发送到本地服务
+            const circuitData = generateCircuitJson();
+            
+            // 仅发送连接描述数据到本地服务app.py
+            fetch('http://localhost:5000/upload', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    circuit: circuitData
+                }),
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('网络响应不正常');
+                }
+                return response.json();
+            })
+            .then(data => {
+                alert('布局数据已成功发送到本地服务！请耐心等待布局布线完成');
+            })
+            .catch((error) => {
+                console.error('发送失败:', error);
+                alert('发送失败，请确保本地服务app.py已启动并运行在http://localhost:5000');
+            });
+        }
+        
+        function hideExportModal() {
+            exportModal.classList.remove('active');
+        }
+        
+        function showImportModal() {
+            importModal.classList.add('active');
+        }
+        
+        function hideImportModal() {
+            importModal.classList.remove('active');
+        }
+        
+        function handleFileSelect(e, previewId, isLayoutFile) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const jsonContent = JSON.parse(e.target.result);
+                    document.getElementById(previewId).textContent = 
+                        JSON.stringify(jsonContent, null, 2);
+                    // 存储解析后的JSON对象
+                    if (isLayoutFile) {
+                        importedLayoutJson = jsonContent;
+                    } else {
+                        importedRouteJson = jsonContent;
+                    }
+                } catch (error) {
+                    document.getElementById(previewId).textContent = 
+                        '错误: 文件格式不正确 - ' + error.message;
+                    // 清除错误的JSON对象
+                    if (isLayoutFile) {
+                        importedLayoutJson = null;
+                    } else {
+                        importedRouteJson = null;
+                    }
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        function parseLayout(moduleData) {
+            // 处理端口
+            if (moduleData.ports) {
+                for (const portName in moduleData.ports) {
+                    const portData = moduleData.ports[portName];
+                    const portLayout = portData.layout || {};
+                    let type = portData.type;
+                    
+                    if (type === 'power') {
+                        type = (portName.toLowerCase().includes('vdd') || portName === 'VCC') ? 'vcc' : 'gnd';
+                    }
+                    
+                    placeComponent(type, 20 * portLayout.x, 20 * portLayout.y, portName);
+                }
+            }
+            
+            // 处理晶体管
+            if (moduleData.mosfets) {
+                for (const mosName in moduleData.mosfets) {
+                    const mosData = moduleData.mosfets[mosName];
+                    const mosLayout = mosData.layout || {};
+                    placeComponent(mosData.type, 20 * mosLayout.x, 20 * mosLayout.y, mosName);
+                }
+            }
+            
+            // 递归处理子模块
+            if (moduleData.subModules) {
+                for (const subName in moduleData.subModules) {
+                    parseLayout(moduleData.subModules[subName]);
+                }
+            }
+        }
+
+        function addWire(netName, segments, vias) {
+            const wireId = `wire_${Date.now()}`;
+            const wire = {
+                id: wireId,
+                netName,
+                segments: segments,
+                vias: vias
+            };
+
+            // 将整个布线网络存储起来
+            wires.push(wire);
+
+            // 渲染所有线段
+            segments.forEach(segment => {
+                renderSegment(segment, wireId);
+            });
+
+            // 渲染所有过孔
+            vias.forEach(via => {
+                renderVia(via, wireId);
+            });
+
+            updateStats();
+        }
+
+        function renderSegment(segment, wireId) {
+            const ns = "http://www.w3.org/2000/svg";
+            const line = document.createElementNS(ns, 'line');
+
+            // 设置线段属性
+            line.setAttribute('x1', segment.start.x);
+            line.setAttribute('y1', segment.start.y);
+            line.setAttribute('x2', segment.end.x);
+            line.setAttribute('y2', segment.end.y);
+            line.setAttribute('class', `fixed-wire ${segment.layer}`);
+            line.setAttribute('stroke-width', 2);
+            line.setAttribute('data-wire-id', wireId);
+            line.setAttribute('data-segment-id', segment.id || `seg_${Date.now()}`);
+
+            // 添加到画布
+            canvas.appendChild(line);
+        }
+
+        function renderVia(via, wireId) {
+            const ns = "http://www.w3.org/2000/svg";
+            const viaElement = document.createElementNS(ns, 'rect');
+
+            // 设置过孔属性（3x3像素）
+            viaElement.setAttribute('x', via.x - 1.5);
+            viaElement.setAttribute('y', via.y - 1.5);
+            viaElement.setAttribute('width', 3);
+            viaElement.setAttribute('height', 3);
+            viaElement.setAttribute('class', 'fixed-via');
+            viaElement.setAttribute('fill', '#FF5722');
+            viaElement.setAttribute('data-wire-id', wireId);
+            viaElement.setAttribute('data-via-id', via.id || `via_${Date.now()}`);
+
+            // 添加到画布
+            canvas.appendChild(viaElement);
+        }
+
+        function parseRoute(routeData) {
+            if (routeData.nets) {
+                routeData.nets.forEach(net => {
+                    const segments = [];
+                    const vias = [];
+
+                    // 解析线段
+                    net.segments.forEach((seg, index) => {
+                        const startPx = gridToPixels(seg.start);
+                        const endPx = gridToPixels(seg.end);
+
+                        segments.push({
+                            id: `seg_${net.name}_${index}`,
+                            start: { x: startPx.x, y: startPx.y },
+                            end: { x: endPx.x, y: endPx.y },
+                            layer: `metal${seg.layer}`
+                        });
+                    });
+
+                    // 解析过孔
+                    net.vias.forEach((via, index) => {
+                        const viaPx = gridToPixels(via);
+                        vias.push({
+                            id: `via_${net.name}_${index}`,
+                            x: viaPx.x,
+                            y: viaPx.y
+                        });
+                    });
+
+                    // 添加完整的布线网络
+                    addWire(net.name, segments, vias);
+                });
+            }
+
+            // 递归处理子模块
+            if (routeData.subModules) {
+                for (const subName in routeData.subModules) {
+                    parseRoute(routeData.subModules[subName]);
+                }
+            }
+        }
+        
+        function importFile() {
+            if (!importedLayoutJson || !importedRouteJson) {
+                alert('请选择布局文件和布线文件！');
+                return;
+            }
+            
+            // 清除画布
+            clearCanvas();
+            
+            // 获取顶层模块
+            const layoutTop = getTopModule(importedLayoutJson);
+            const routeTop = getTopModule(importedRouteJson);
+            
+            // 解析布局文件
+            parseLayout(layoutTop);
+            
+            // 解析布线文件
+            parseRoute(routeTop);
+            
+            // 计算元件中心并居中显示
+            centerComponents();
+            
+            // 隐藏导入模态框
+            hideImportModal();
+        }
+
+        // 辅助函数：获取顶层模块
+        function getTopModule(json) {
+            // 检查是否有单个顶层模块
+            if (typeof json === 'object' && !Array.isArray(json)) {
+                const keys = Object.keys(json);
+                if (keys.length === 1) {
+                    return json[keys[0]];
+                }
+            }
+            return json; // 已经是所需格式
+        }
+
+        // 修正的渲染固定布线函数
+        function renderFixedWire(wire) {
+            const ns = "http://www.w3.org/2000/svg";
+        
+            // 绘制线段
+            wire.segments.forEach(segment => {
+                const line = document.createElementNS(ns, 'line');
+                line.setAttribute('x1', segment.start.x);
+                line.setAttribute('y1', segment.start.y);
+                line.setAttribute('x2', segment.end.x);
+                line.setAttribute('y2', segment.end.y);
+            
+                // 修正：直接使用层号而不是数字
+                const layerClass = `metal${segment.layer}`;
+                line.setAttribute('class', `fixed-wire ${layerClass}`);
+                line.setAttribute('stroke-width', 2);
+                line.setAttribute('stroke-dasharray', '5,3');
+                line.setAttribute('data-wire-id', wire.id);
+                canvas.appendChild(line);
+            });
+        
+            // 绘制过孔
+            if (wire.vias) {
+                wire.vias.forEach(via => {
+                    const viaElement = document.createElementNS(ns, 'circle');
+                    viaElement.setAttribute('cx', via.x);
+                    viaElement.setAttribute('cy', via.y);
+                    viaElement.setAttribute('r', 3);
+                    viaElement.setAttribute('class', 'fixed-via');
+                    viaElement.setAttribute('fill', '#FF5722');
+                    viaElement.setAttribute('data-wire-id', wire.id);
+                    canvas.appendChild(viaElement);
+                });
+            }
+        }
+        
+        function centerComponents() {
+            if (components.length === 0) return;
+            
+            // 计算所有元件的边界
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            components.forEach(comp => {
+                minX = Math.min(minX, comp.x);
+                minY = Math.min(minY, comp.y);
+                maxX = Math.max(maxX, comp.x + (comp.type === 'nmos' || comp.type === 'pmos' ? gridSize*6 : 0));
+                maxY = Math.max(maxY, comp.y + (comp.type === 'nmos' || comp.type === 'pmos' ? gridSize*4 : 0));
+            });
+            
+            // 计算中心点
+            const centerX = (minX + maxX) / 2;
+            const centerY = (minY + maxY) / 2;
+            
+            // 计算视口中心
+            const containerRect = canvasContainer.getBoundingClientRect();
+            const viewportCenterX = containerRect.width / 2;
+            const viewportCenterY = containerRect.height / 2;
+            
+            // 调整平移量使元件中心位于视口中心
+            panX = viewportCenterX - centerX * zoomLevel;
+            panY = viewportCenterY - centerY * zoomLevel;
+            
+            applyTransform();
+        }
+                
+        function downloadJson() {
+            let data, filename;
+            
+            switch(currentExportType) {
+                case 'vjson':
+                    data = generateCircuitJson();
+                    filename = 'circuit_design.v.json';
+                    break;
+                case 'layout':
+                    data = generateLayoutJson();
+                    filename = 'Layout_after.json';
+                    break;
+                case 'route':
+                    data = generateRouteJson();
+                    filename = 'Route_after.json';
+                    break;
+            }
+            
+            if (!data) return;
+            
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", filename);
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+            
+            hideExportModal();
+        }
+        
+        function generateCircuitJson() {
+            // 1. 构建网络映射表 (使用连通图算法)
+            const pinMap = new Map(); // 引脚到网络的映射
+            const nets = {}; // 网络ID到网络对象的映射
+            
+            // 初始化所有引脚
+            components.forEach(comp => {
+                comp.pins.forEach(pin => {
+                    const pinId = `${pin.x},${pin.y}`;
+                    pinMap.set(pinId, {
+                        id: pinId,
+                        compId: comp.id,
+                        pinType: pin.type,
+                        compType: comp.type,
+                        compName: comp.name
+                    });
+                });
+            });
+
+            // 连通图算法 - 合并导线连接的网络
+            wires.forEach(wire => {
+                const startPinId = `${wire.start.x},${wire.start.y}`;
+                const endPinId = `${wire.end.x},${wire.end.y}`;
+                
+                const startNet = pinMap.get(startPinId)?.netId;
+                const endNet = pinMap.get(endPinId)?.netId;
+                
+                if (!startNet && !endNet) {
+                    // 创建新网络
+                    const netId = `net_${Object.keys(nets).length + 1}`;
+                    nets[netId] = {
+                        id: netId,
+                        pins: new Set([startPinId, endPinId]),
+                        components: new Set(),
+                        portTypes: new Set()
+                    };
+                    pinMap.get(startPinId).netId = netId;
+                    pinMap.get(endPinId).netId = netId;
+                } else if (startNet && !endNet) {
+                    // 将终点加入起点网络
+                    pinMap.get(endPinId).netId = startNet;
+                    nets[startNet].pins.add(endPinId);
+                } else if (!startNet && endNet) {
+                    // 将起点加入终点网络
+                    pinMap.get(startPinId).netId = endNet;
+                    nets[endNet].pins.add(startPinId);
+                } else if (startNet !== endNet) {
+                    // 合并两个网络
+                    const targetNet = nets[startNet];
+                    const sourceNet = nets[endNet];
+                    
+                    // 将源网络的所有引脚转移到目标网络
+                    sourceNet.pins.forEach(pinId => {
+                        pinMap.get(pinId).netId = startNet;
+                        targetNet.pins.add(pinId);
+                    });
+                    
+                    // 删除源网络
+                    delete nets[endNet];
+                }
+            });
+
+            // 2. 处理未连接的引脚
+            pinMap.forEach((pinInfo, pinId) => {
+                if (!pinInfo.netId) {
+                    const netId = `net_${Object.keys(nets).length + 1}`;
+                    pinInfo.netId = netId;
+                    nets[netId] = {
+                        id: netId,
+                        pins: new Set([pinId]),
+                        components: new Set(),
+                        portTypes: new Set()
+                    };
+                }
+            });
+
+            // 3. 构建网络组件关系
+            pinMap.forEach(pinInfo => {
+                const net = nets[pinInfo.netId];
+                net.components.add(pinInfo.compId);
+                
+                // 记录端口类型
+                if (['input', 'output', 'vcc', 'gnd'].includes(pinInfo.compType)) {
+                    net.portTypes.add(pinInfo.compType);
+                }
+            });
+
+            // 4. 确定网络名称和类型
+            const netMap = new Map(); // 网络ID到网络名称的映射
+            const portNets = {}; // 端口网络
+            
+            Object.values(nets).forEach(net => {
+                let netName = net.id;
+                let netType = 'wire';
+                
+                // 确定网络类型和名称
+                if (net.portTypes.has('input')) {
+                    netType = 'input';
+                    // 查找输入端口名称
+                    net.pins.forEach(pinId => {
+                        const pinInfo = pinMap.get(pinId);
+                        if (pinInfo.compType === 'input') {
+                            netName = pinInfo.compName;
+                        }
+                    });
+                } else if (net.portTypes.has('output')) {
+                    netType = 'output';
+                    // 查找输出端口名称
+                    net.pins.forEach(pinId => {
+                        const pinInfo = pinMap.get(pinId);
+                        if (pinInfo.compType === 'output') {
+                            netName = pinInfo.compName;
+                        }
+                    });
+                } else if (net.portTypes.has('vcc')) {
+                    netType = 'power';
+                    netName = 'VCC';
+                } else if (net.portTypes.has('gnd')) {
+                    netType = 'power';
+                    netName = 'GND';
+                }
+                
+                netMap.set(net.id, netName);
+                portNets[netName] = {
+                    type: netType,
+                    out: [],
+                    in: []
+                };
+            });
+
+            // 5. 构建端口连接关系
+            Object.values(nets).forEach(net => {
+                const netName = netMap.get(net.id);
+                const portNet = portNets[netName];
+                
+                net.components.forEach(compId => {
+                    const comp = components.find(c => c.id === compId);
+                    if (!comp) return;
+                    
+                    // 晶体管连接
+                    if (comp.type === 'nmos' || comp.type === 'pmos') {
+                        if (portNet.type === 'input' || portNet.type === 'power') {
+                            portNet.out.push(comp.name);
+                        } else if (portNet.type === 'output') {
+                            portNet.in.push(comp.name);
+                        } else { // wire类型
+                            // 根据引脚类型确定连接方向
+                            net.pins.forEach(pinId => {
+                                const pinInfo = pinMap.get(pinId);
+                                if (pinInfo.compId === compId) {
+                                    if (pinInfo.pinType === 'gate' || pinInfo.pinType === 'source') {
+                                        portNet.out.push(comp.name);
+                                    } else if (pinInfo.pinType === 'drain') {
+                                        portNet.in.push(comp.name);
+                                    }
+                                }
+                            });
+                        }
+                    }
+                });
+            });
+
+            // 6. 构建电路描述
+            const circuit = {
+                "top_module": {
+                    "type": "module",
+                    "name": "top_module",
+                    "ports": portNets,
+                    "mosfets": {},
+                    "subModules": {}
+                }
+            };
+            
+            // 7. 构建晶体管连接
+            components.filter(c => c.type === 'nmos' || c.type === 'pmos').forEach(transistor => {
+                const transName = transistor.name;
+                circuit.top_module.mosfets[transName] = {
+                    type: transistor.type,
+                    drain: '',
+                    source: '',
+                    gate: ''
+                };
+                
+                // 查找每个引脚连接的网络
+                transistor.pins.forEach(pin => {
+                    const pinId = `${pin.x},${pin.y}`;
+                    const pinInfo = pinMap.get(pinId);
+                    if (pinInfo && pinInfo.netId) {
+                        const netName = netMap.get(pinInfo.netId);
+                        
+                        if (pin.type === 'drain') {
+                            circuit.top_module.mosfets[transName].drain = netName;
+                        } else if (pin.type === 'source') {
+                            circuit.top_module.mosfets[transName].source = netName;
+                        } else if (pin.type === 'gate') {
+                            circuit.top_module.mosfets[transName].gate = netName;
+                        }
+                    }
+                });
+            });
+            
+            return circuit;
+        }
+
+        function generateLayoutJson() {
+            const layout = {
+                "top_module": {
+                    "inputPorts": [],
+                    "isgnd": false,
+                    "isvcc": false,
+                    "layout": {
+                        "height": 500,
+                        "layer": 1,
+                        "width": 800,
+                        "x": 0,
+                        "y": 0
+                    },
+                    "mosfets": {},
+                    "name": "top_module",
+                    "outputPorts": [],
+                    "subModules": {},
+                    "type": "module"
+                }
+            };
+            
+            // 收集端口
+            components.filter(c => ['input', 'output', 'vcc', 'gnd'].includes(c.type)).forEach(port => {
+                if (port.type === 'input') {
+                    layout.top_module.inputPorts.push(port.name);
+                } else if (port.type === 'output') {
+                    layout.top_module.outputPorts.push(port.name);
+                }
+                
+                if (port.type === 'vcc') layout.top_module.isvcc = true;
+                if (port.type === 'gnd') layout.top_module.isgnd = true;
+            });
+            
+            // 收集晶体管
+            components.filter(c => c.type === 'nmos' || c.type === 'pmos').forEach(transistor => {
+                layout.top_module.mosfets[transistor.name] = {
+                    type: transistor.type,
+                    drain: "",
+                    source: "",
+                    gate: "",
+                    layout: {
+                        height: gridSize*4,
+                        layer: 1,
+                        width: gridSize*6,
+                        x: transistor.x,
+                        y: transistor.y
+                    }
+                };
+            });
+            
+            return layout;
+        }
+        
+        function generateRouteJson() {
+            const route = {
+                "top_module": {
+                    "module_name": "top_module",
+                    "name": "top_module",
+                    "nets": [],
+                    "subModules": {}
+                }
+            };
+            
+            // 收集连线
+            wires.forEach((wire, index) => {
+                const net = {
+                    name: `net_${index + 1}`,
+                    pins: [
+                        { layer: 1, x: wire.start.x, y: wire.start.y },
+                        { layer: 1, x: wire.end.x, y: wire.end.y }
+                    ],
+                    segments: [],
+                    vias: []
+                };
+                
+                // 添加线段
+                wire.segments.forEach(segment => {
+                    net.segments.push({
+                        start: { x: segment.start.x, y: segment.start.y },
+                        end: { x: segment.end.x, y: segment.end.y },
+                        layer: segment.layer === 'metal1' ? 1 : 
+                               segment.layer === 'metal2' ? 2 : 
+                               segment.layer === 'metal3' ? 3 : 
+                               segment.layer === 'metal4' ? 4 : 
+                               5
+                    });
+                });
+                
+                // 添加过孔
+                wire.vias.forEach(via => {
+                    net.vias.push({ x: via.x, y: via.y });
+                });
+                
+                route.top_module.nets.push(net);
+            });
+            
+            return route;
+        }
+        
+        function clearCanvas() {
+            // 清空元件
+            components.forEach(comp => {
+                document.querySelectorAll(`[data-id='${comp.id}']`).forEach(el => el.remove());
+                document.querySelectorAll(`.component-label[data-parent='${comp.id}']`).forEach(el => el.remove());
+                document.querySelectorAll(`.pin[data-parent='${comp.id}']`).forEach(el => el.remove());
+            });
+            components = [];
+            
+            // 清空连线
+            wires.forEach(wire => {
+                document.querySelectorAll(`[data-wire-id='${wire.id}']`).forEach(el => el.remove());
+            });
+            wires = [];
+            
+            updateStats();
+        }
+    </script>
+</body>
+</html>
