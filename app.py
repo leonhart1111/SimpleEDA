@@ -215,10 +215,13 @@ def get_simulation_data():
         header_line = module_content.splitlines()[0]
         headers = [h.strip() for h in header_line.split('|')[1:-1]]
         
+        inout_line = module_content.splitlines()[2]
+        inouts = [h.strip() for h in inout_line.split('|')[1:-1]]
+        
         # 计算输入端口数量（输入列标题后连续出现的 | 数量）
         inputs_count = header_line.count('|', header_line.index('Inputs'), header_line.index('Outputs'))
-        input_ports = headers[:inputs_count]
-        output_ports = headers[inputs_count:]
+        input_ports = inouts[:inputs_count]
+        output_ports = inouts[inputs_count:]
         
         # 解析表格数据
         table_lines = module_content.splitlines()[2:]
@@ -228,14 +231,16 @@ def get_simulation_data():
             if not line.startswith('|'):
                 continue
             values = [v.strip() for v in line.split('|')[1:-1]]
-            if len(values) != len(headers):
+            if len(values) != len(inouts):
                 continue
             
             row = {}
-            for i, header in enumerate(headers):
+            for i, header in enumerate(inouts):
                 row[header] = values[i]
             table.append(row)
-        
+        print(input_ports)
+        print(output_ports)
+        print(table)
         return jsonify({
             'status': 'success',
             'module_name': 'top_module',
