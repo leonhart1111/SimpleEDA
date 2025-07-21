@@ -6,6 +6,7 @@ import threading
 import time
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+import re
 
 app = Flask(__name__)
 CORS(app)
@@ -90,7 +91,7 @@ def process_verilog(verilog_code):
             raise FileNotFoundError(f"mos2json.exe文件不存在: {mos2json_path}")
         
         mos2json_result = subprocess.run(
-            [mos2json_path, '-f', 'top_module.v', '-d'],
+            [mos2json_path, '-f', 'top_module.v', '-d', '-m'],
             capture_output=True,
             text=True,
             timeout=60
@@ -187,6 +188,67 @@ def check_status():
         'status': 'processing',
         'message': '布局布线程序正在运行，请稍候...'
     })
+
+# 新增路由：获取仿真数据
+@app.route('/get_simulation_data', methods=['GET'])
+def get_simulation_data():
+    try:
+        # 读取并解析仿真文件
+        with open('top_module.v.md', 'r') as f:
+            content = f.read()
+        print(content)
+        # 查找模块部分
+        module_match = re.search(r'## module (top_module)\s+(.*?)(?=^## |\Z)', content, re.DOTALL | re.MULTILINE)
+        if not module_match:
+            print("未找到top_module模块")
+            return jsonify({'status': 'error', 'message': 'Top module not found'}), 404
+            
+        module_content = module_match.group(2).strip()
+        
+        # 查找表格
+        table_match = re.search(r'^\|.*?\|.*?\|.*?\|.*?\|$', module_content, re.MULTILINE)
+        if not table_match:
+            print("未找到表格")
+            return jsonify({'status': 'error', 'message': 'Table not found'}), 404
+        
+        # 解析表头
+        header_line = module_content.splitlines()[0]
+        headers = [h.strip() for h in header_line.split('|')[1:-1]]
+        
+        # 计算输入端口数量（输入列标题后连续出现的 | 数量）
+        inputs_count = header_line.count('|', header_line.index('Inputs'), header_line.index('Outputs'))
+        input_ports = headers[:inputs_count]
+        output_ports = headers[inputs_count:]
+        
+        # 解析表格数据
+        table_lines = module_content.splitlines()[2:]
+        table = []
+        
+        for line in table_lines:
+            if not line.startswith('|'):
+                continue
+            values = [v.strip() for v in line.split('|')[1:-1]]
+            if len(values) != len(headers):
+                continue
+            
+            row = {}
+            for i, header in enumerate(headers):
+                row[header] = values[i]
+            table.append(row)
+        
+        return jsonify({
+            'status': 'success',
+            'module_name': 'top_module',
+            'input_ports': input_ports,
+            'output_ports': output_ports,
+            'table': table
+        })
+    except Exception as e:
+        print(f"解析文件时出错: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
 
 if __name__ == '__main__':   
     # 启动Flask应用

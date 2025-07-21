@@ -544,7 +544,106 @@
             stroke: #E64A19;
             stroke-width: 1;
         }
-
+        /* 新增仿真面板样式 */
+        .simulation-panel {
+            width: 280px;
+            background-color: var(--panel-bg);
+            border-left: 1px solid var(--border-color);
+            padding: 20px;
+            overflow-y: auto;
+            display: none; /* 默认隐藏 */
+        }
+        
+        .simulation-header {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .simulation-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .inputs-section, .outputs-section {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .input-control {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+        }
+        
+        .input-name {
+            font-weight: 500;
+        }
+        
+        .input-toggle {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .toggle-btn {
+            width: 40px;
+            height: 30px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.1);
+            transition: background 0.2s;
+        }
+        
+        .toggle-btn.active {
+            background: var(--primary);
+        }
+        
+        .output-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .output-value {
+            font-weight: bold;
+            color: var(--secondary);
+        }
+        
+        .run-simulation {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        
+        .run-simulation:hover {
+            background: var(--primary-dark);
+        }
     </style>
 </head>
 <body>
@@ -574,6 +673,9 @@
             </button>
             <button class="btn" id="show-all-layers">
                 <span class="btn-icon">👁️</span> 显示所有层
+            </button>
+            <button class="btn" id="simulation-btn">
+                <span class="btn-icon">📊📊</span> 仿真模式
             </button>
         </div>
     </div>
@@ -669,6 +771,28 @@
                 <button class="zoom-btn" id="zoom-in">+</button>
                 <button class="zoom-btn" id="zoom-out">-</button>
                 <button class="zoom-btn" id="zoom-reset">↺</button>
+            </div>
+        </div>
+
+        <!-- 新增仿真面板 -->
+        <div class="simulation-panel">
+            <div class="simulation-header">
+                <h3>电路仿真</h3>
+                <p id="simulation-description">选择仿真模式以加载输入输出</p>
+            </div>
+            
+            <div class="simulation-controls">
+                <div class="inputs-section">
+                    <div class="section-title">输入端口</div>
+                    <div id="input-controls"></div>
+                </div>
+                
+                <div class="outputs-section">
+                    <div class="section-title">输出端口</div>
+                    <div id="output-display"></div>
+                </div>
+                
+                <button class="run-simulation" id="run-simulation">运行仿真</button>
             </div>
         </div>
     </div>
@@ -945,6 +1069,11 @@
             metal4: true,
             metal5: true
         };
+
+        // 仿真相关变量
+        let simulationMode = false;
+        let simulationData = null;
+        let inputValues = {};
         
         // 添加画布平移功能变量
         let panX = 0;
@@ -962,48 +1091,45 @@
         const importModal = document.getElementById('import-modal');
         const currentLayerElement = document.getElementById('current-layer');
         const canvasContainer = document.querySelector('.canvas-container');
-        const verilogTemplate = `module My_and(A, B, Y);
+        const verilogTemplate = `module My_and(A, B, Y )
 input A, B;
-    output Y;
+output Y;
     wire tmp;
-            
     nmos(tmp, VCC, A);
     nmos(Y, tmp, B);
     pmos(Y, GND, A);
     pmos(Y, GND, B);
 endmodule
 
-module My_or(A, B, Y);
-    input A, B;
-    output Y;
+module My_or(A, B, Y)
+input A, B;
+output Y;
     wire tmp;
-                
     nmos(Y, VCC, A);
     nmos(Y, VCC, B);
     pmos(tmp, GND, A);
     pmos(Y, tmp, B);
 endmodule
 
-module My_xor(A, B, Y);
-    input A, B;
-    output Y;
+module My_xor(A, B, Y)
+input A, B;
+output Y;
     wire tmp1, tmp2, tmp3, tmp4;
-                
-    nmos(tmp1, GND, A);
-    nmos(Y, tmp1, B);
+    pmos(tmp1, GND, A);
+    pmos(Y, tmp1, B);
     nmos(tmp2, GND, A);
     nmos(Y, tmp2, B);
+
     pmos(tmp3, VCC, A);
     nmos(Y, tmp3, B);
     nmos(tmp4, VCC, A);
     pmos(Y, tmp4, B);
 endmodule
 
-module adder(A, B, Cin, D, Cout);
-    input A, B, Cin;
-    output D, Cout;
+module adder(A, B, Cin, D, Cout)
+input A, B, Cin;
+output D, Cout;
     wire tmp_xor, tmp_and_1, tmp_and_2;
-                
     My_xor f0(A, B, tmp_xor);
     My_xor f1(Cin, tmp_xor, D);
     My_and f2(A, B, tmp_and_1);
@@ -1026,6 +1152,119 @@ endmodule`;
             document.getElementById('verilog-modal').classList.remove('active');
         }
         
+        // 进入仿真模式
+        document.getElementById('simulation-btn').addEventListener('click', function() {
+            simulationMode = !simulationMode;
+            const panel = document.querySelector('.simulation-panel');
+            panel.style.display = simulationMode ? 'block' : 'none';
+            
+            if (simulationMode) {
+                document.getElementById('simulation-btn').classList.add('active');
+                loadSimulationData();
+            } else {
+                document.getElementById('simulation-btn').classList.remove('active');
+            }
+        });
+        
+        // 加载仿真数据
+        function loadSimulationData() {
+            fetch('http://localhost:5000/get_simulation_data')
+                .then(response => response.json())
+                .then(data => {
+                    simulationData = data;
+                    setupSimulationControls();
+                })
+                .catch(error => {
+                    console.error('获取仿真数据失败:', error);
+                    document.getElementById('simulation-description').textContent = 
+                        '获取仿真数据失败，请确保后端已生成仿真文件';
+                });
+        }
+        
+        // 设置仿真控件
+        function setupSimulationControls() {
+            const inputControls = document.getElementById('input-controls');
+            const outputDisplay = document.getElementById('output-display');
+            
+            inputControls.innerHTML = '';
+            outputDisplay.innerHTML = '';
+            
+            // 设置输入控件
+            simulationData.input_ports.forEach(port => {
+                const control = document.createElement('div');
+                control.className = 'input-control';
+                
+                control.innerHTML = `
+                    <div class="input-name">${port}</div>
+                    <div class="input-toggle">
+                        <div class="toggle-btn" data-port="${port}" data-value="0">0</div>
+                        <div class="toggle-btn" data-port="${port}" data-value="1">1</div>
+                    </div>
+                `;
+                
+                inputControls.appendChild(control);
+                
+                // 默认值设为0
+                inputValues[port] = '0';
+                
+                // 设置切换事件
+                control.querySelectorAll('.toggle-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const value = this.dataset.value;
+                        inputValues[port] = value;
+                        
+                        // 更新活动状态
+                        this.parentElement.querySelectorAll('.toggle-btn').forEach(b => {
+                            b.classList.remove('active');
+                        });
+                        this.classList.add('active');
+                    });
+                });
+                
+                // 设置第一个为默认活动
+                control.querySelector('.toggle-btn[data-value="0"]').classList.add('active');
+            });
+            
+            // 设置输出显示
+            simulationData.output_ports.forEach(port => {
+                const outputRow = document.createElement('div');
+                outputRow.className = 'output-row';
+                outputRow.innerHTML = `
+                    <div>${port}</div>
+                    <div class="output-value" id="output-${port}">?</div>
+                `;
+                outputDisplay.appendChild(outputRow);
+            });
+            
+            // 设置描述
+            document.getElementById('simulation-description').innerHTML = 
+                `仿真模块: <strong>${simulationData.module_name}</strong><br>
+                 输入端口: ${simulationData.input_ports.join(', ')}<br>
+                 输出端口: ${simulationData.output_ports.join(', ')}`;
+        }
+        
+        // 运行仿真
+        document.getElementById('run-simulation').addEventListener('click', function() {
+            if (!simulationData) return;
+            
+            // 查找匹配的行
+            const inputValuesStr = simulationData.input_ports.map(p => inputValues[p]).join(' | ');
+            const matchingRow = simulationData.table.find(row => {
+                return simulationData.input_ports.every(port => 
+                    row[port] === inputValues[port]
+                );
+            });
+            
+            if (!matchingRow) {
+                alert('未找到匹配的输入组合');
+                return;
+            }
+            
+            // 更新输出显示
+            simulationData.output_ports.forEach(port => {
+                document.getElementById(`output-${port}`).textContent = matchingRow[port];
+            });
+        });
         
         function saveVerilog() {
             const verilogCode = document.getElementById('verilog-editor').value;
