@@ -1,6 +1,6 @@
 # SimpleEDA
 - A simple Electronic Design Automation
-- 实现可交互式设计、verilog一键式布局布线并预览
+- 实现可交互式设计、verilog一键式布局布线并预览，同时支持仿真
 ### Environment
 - python3.9: flask; plotly; flask_cors
 ```
@@ -21,6 +21,7 @@ then click chipdesigner.html (open it by a browser) and edit your chip(or circui
 - "导入文件" is for laoding the Layout_after and Route_after files, in fact, there are both of them after click "进行布局". You can also laod your own files.
 - "删除模式" is for deleting, simply click one component;
 - "显示所有层" is for see all wires no matter which layer they're on;
+- "仿真模式" is for simulating.
 #### On the left:
 - These components are for "选择模式";
 - "金属层%d" is for selecting to see wires of which layers;
