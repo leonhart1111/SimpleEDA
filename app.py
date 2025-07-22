@@ -1,4 +1,3 @@
-# app.py
 import os
 import subprocess
 import json
@@ -23,7 +22,7 @@ def run_layout_routing(filename, modulename):
     
     # 运行布局布线程序
     try:
-        print("开始运行布局布线程序...")
+        print(f"开始运行布局布线程序，文件: {filename}, 模块: {modulename}...")
         
         # 获取TestRoute.exe的绝对路径
         test_route_path = os.path.join(os.getcwd(), 'TestRoute.exe')
@@ -49,7 +48,8 @@ def run_layout_routing(filename, modulename):
         )
         
         # 将输出写入日志文件
-        with open('test_route_log.txt', 'w', encoding='utf-8') as f:
+        log_filename = f"{filename}_log.txt"
+        with open(log_filename, 'w', encoding='utf-8') as f:
             f.write(f"=== 执行时间: {time.ctime()}\n")
             f.write(f"=== 返回码: {result.returncode}\n")
             f.write("=== 标准输出:\n")
@@ -69,19 +69,20 @@ def run_layout_routing(filename, modulename):
             print("see.py错误:")
             print(see_result.stderr)
             
-        print("布局布线完成!")
+        print(f"布局布线完成!日志文件: {log_filename}")
     except subprocess.TimeoutExpired:
         print("布局布线程序运行超时")
     except Exception as e:
         print(f"运行布局布线程序时出错: {str(e)}")
 
 # 新增的Verilog处理函数
-def process_verilog(verilog_code):
+def process_verilog(verilog_code,filename, modulename):
     try:
         # 保存Verilog文件
-        with open('top_module.v', 'w') as f:
+        verilog_filename = f"{filename}.v"
+        with open(verilog_filename, 'w') as f:
             f.write(verilog_code)
-        print("Verilog文件已保存为 top_module.v")
+        print(f"Verilog文件已保存为{verilog_filename}")
         
         # 运行mos2json转换
         print("运行mos2json.exe...")
@@ -91,7 +92,7 @@ def process_verilog(verilog_code):
             raise FileNotFoundError(f"mos2json.exe文件不存在: {mos2json_path}")
         
         mos2json_result = subprocess.run(
-            [mos2json_path, '-f', 'top_module.v', '-d', '-m'],
+            [mos2json_path, '-f', verilog_filename, '-d', '-m'],
             capture_output=True,
             text=True,
             timeout=60
@@ -106,11 +107,41 @@ def process_verilog(verilog_code):
         print("mos2json转换成功!")
         
         # 运行布局布线
-        run_layout_routing('top_module.v.json', 'top_module')
+        json_filename = f"{filename}.v.json"
+        run_layout_routing(json_filename, modulename)
         
         return True, "Verilog处理成功，布局布线完成!"
     except Exception as e:
         return False, f"处理Verilog时出错: {str(e)}"
+
+# 新增预览布局布线路由
+@app.route('/preview', methods=['GET'])
+def preview_layout():
+    try:
+        print("开始预览布局布线...")
+        see_result = subprocess.run(
+            ['python', 'see.py'],
+            capture_output=True,
+            text=True
+        )
+        
+        print("see.py输出:")
+        print(see_result.stdout)
+        if see_result.stderr:
+            print("see.py错误:")
+            print(see_result.stderr)
+            
+        return jsonify({
+            'status': 'success',
+            'message': '布局布线预览完成',
+            'output': see_result.stdout,
+            'error': see_result.stderr
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
 
 @app.route('/upload', methods=['POST'])
 def upload_design():
@@ -159,13 +190,15 @@ def upload_verilog():
             'message': '无效的请求数据'
         }), 400
     
-    # 获取Verilog代码
+    # 获取Verilog代码和新的参数
     verilog_code = request.json['verilog']
-    
+    filename = request.json.get('filename', 'my_design')  # 默认为top_module
+    modulename = request.json.get('modulename', 'top_module')  # 默认为top_module
+    print(filename + ' <-' + modulename)
     try:
         # 在后台线程中处理Verilog
         def process_in_thread():
-            success, message = process_verilog(verilog_code)
+            success, message = process_verilog(verilog_code, filename, modulename)
             print(message)
         
         threading.Thread(target=process_in_thread, daemon=True).start()
@@ -190,30 +223,38 @@ def check_status():
     })
 
 # 新增路由：获取仿真数据
-@app.route('/get_simulation_data', methods=['GET'])
+@app.route('/get_simulation_data', methods=['POST'])
 def get_simulation_data():
+    if not request.json or 'filename' not in request.json:
+        return jsonify({
+            'status': 'error',
+            'message': '无效的请求数据'
+        }), 400
     try:
         # 读取并解析仿真文件
-        with open('top_module.v.md', 'r') as f:
+        filename = request.json.get('filename')
+        modulename = request.json.get('modulename') 
+        allfilename = filename + '.v.md'
+        with open(allfilename, 'r') as f:
             content = f.read()
+        print(filename + ' <- ' + modulename)
         print(content)
         # 查找模块部分
-        module_match = re.search(r'## module (top_module)\s+(.*?)(?=^## |\Z)', content, re.DOTALL | re.MULTILINE)
+        module_match = re.search(fr'## module {modulename}\s+(.*?)(?=^## |\Z)', content, re.DOTALL | re.MULTILINE)
         if not module_match:
-            print("未找到top_module模块")
-            return jsonify({'status': 'error', 'message': 'Top module not found'}), 404
+            print(f"未找到{modulename}模块")
+            return jsonify({'status': 'error', 'message': 'module not found'}), 404
             
-        module_content = module_match.group(2).strip()
+        module_content = module_match.group(1).strip()
         
         # 查找表格
-        table_match = re.search(r'^\|.*?\|.*?\|.*?\|.*?\|$', module_content, re.MULTILINE)
+        table_match = re.search(r'^\|.*?\|.*?\|$', module_content, re.MULTILINE)
         if not table_match:
             print("未找到表格")
             return jsonify({'status': 'error', 'message': 'Table not found'}), 404
         
         # 解析表头
         header_line = module_content.splitlines()[0]
-        headers = [h.strip() for h in header_line.split('|')[1:-1]]
         
         inout_line = module_content.splitlines()[2]
         inouts = [h.strip() for h in inout_line.split('|')[1:-1]]
@@ -243,7 +284,7 @@ def get_simulation_data():
         print(table)
         return jsonify({
             'status': 'success',
-            'module_name': 'top_module',
+            'module_name': modulename,
             'input_ports': input_ports,
             'output_ports': output_ports,
             'table': table

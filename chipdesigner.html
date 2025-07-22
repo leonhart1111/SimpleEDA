@@ -7,21 +7,21 @@
     <style>
         /* 原有样式保持不变 */
         :root {
-            --primary: #1a73e8;
-            --primary-dark: #0d47a1;
-            --secondary: #00c853;
+            --primary: #64a9a2;
+            --primary-dark: #267263;
+            --secondary: #74d09d;
             --dark-bg: #121212;
             --panel-bg: #1e1e1e;
             --grid-color: #333;
             --text-primary: #e0e0e0;
             --text-secondary: #9e9e9e;
             --border-color: #333;
+            --transistor-p: #ffd670;
             --transistor-n: #4fc3f7;
-            --transistor-p: #f06292;
             --port-in: #81c784;
-            --port-out: #ff8a65;
-            --vcc: #f44336;
-            --gnd: #9e9e9e;
+            --port-out: #EDAEDA;
+            --vcc: #ff6a5f;
+            --gnd: #aec5d2;
             --wire-color: #ffd54f;
             --via-color: #ff9800;
         }
@@ -72,6 +72,34 @@
             display: flex;
             gap: 15px;
         }
+
+        .btn2 {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn2:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+        }
+        
+        .btn2.active {
+            background: rgba(61, 255, 203, 0.482);
+            box-shadow: 0 0 2px rgba(102, 227, 219, 0.247);
+        }
+        
+        .btn2-icon {
+            font-size: 18px;
+        }
         
         .btn {
             background: rgba(255, 255, 255, 0.15);
@@ -94,7 +122,7 @@
         
         .btn.active {
             background: var(--secondary);
-            box-shadow: 0 0 15px rgba(0, 200, 83, 0.4);
+            box-shadow: 0 0 15px rgba(20, 229, 173, 0.4);
         }
         
         .btn-icon {
@@ -191,7 +219,7 @@
         }
         
         .layer-option.active {
-            background: rgba(26, 115, 232, 0.2);
+            background: rgba(26, 252, 222, 0.2);
             border-left: 3px solid var(--primary);
         }
         
@@ -330,7 +358,7 @@
         }
         
         .modal-header {
-            padding: 20px;
+            padding: 12px;
             background: linear-gradient(135deg, var(--primary-dark), var(--primary));
             font-size: 18px;
             font-weight: 600;
@@ -343,11 +371,11 @@
         }
         
         .modal-footer {
-            padding: 15px 20px;
+            padding: 10px 10px;
             background: rgba(255, 255, 255, 0.05);
             display: flex;
             justify-content: flex-end;
-            gap: 10px;
+            gap: 20px;
         }
         
         .json-preview {
@@ -386,6 +414,10 @@
         
         .btn-primary {
             background-color: var(--primary);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
         }
         
         .btn-secondary {
@@ -493,7 +525,7 @@
         
         .tab.active {
             border-bottom: 2px solid var(--primary);
-            background: rgba(26, 115, 232, 0.2);
+            background: rgba(26, 232, 181, 0.244);
         }
         
         .tab-content {
@@ -504,13 +536,13 @@
             display: block;
         }
         .module-container {
-            stroke: #4285F4;
+            stroke: #42d3f4;
             stroke-width: 2;
             fill: none;
             stroke-dasharray: 5,5;
         }
         .module-label {
-            fill: #4285F4;
+            fill: #54c9b3;
             font-size: 14px;
             font-weight: bold;
         }
@@ -520,23 +552,23 @@
             pointer-events: none;
         }
         .fixed-wire.metal1 {
-            stroke: #FFD54F; /* 金属层1 - 金色 */
+            stroke: #fcff4a; /* 金属层1 - 黄色 */
         }
     
         .fixed-wire.metal2 {
-            stroke: #FF9800; /* 金属层2 - 橙色 */
+            stroke: #ffac52; /* 金属层2 - 橙色 */
         }
     
         .fixed-wire.metal3 {
-            stroke: #4FC3F7; /* 金属层3 - 蓝色 */
+            stroke: #5ccbff; /* 金属层3 - 蓝色 */
         }
     
         .fixed-wire.metal4 {
-            stroke: #81C784; /* 金属层4 - 绿色 */
+            stroke: #a1e677; /* 金属层4 - 绿色 */
         }
     
         .fixed-wire.metal5 {
-            stroke: #BA68C8; /* 金属层5 - 紫色 */
+            stroke: #EDAEDA; /* 金属层5 - 粉色 */
         }
     
         .fixed-via {
@@ -644,12 +676,180 @@
         .run-simulation:hover {
             background: var(--primary-dark);
         }
+
+        .verilog-params {
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.0);
+            border-radius: 8px;
+        }
+
+        .param-group {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 50px;
+            background: rgba(255, 255, 255, 0.0);
+            padding: 1px;
+            border-radius: 6px;
+            height: 30px;
+        }
+
+        .param-group label {
+            width: auto;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        .param-group input {
+            flex: 1;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-primary);
+        }
+        .waveform-container {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            max-height: 650px;
+            overflow: auto;
+        }
+
+        #waveform-canvas {
+            background-color: #1e1e1e;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            width: 100%;
+            height: 500px;
+            margin-bottom: 15px;
+        }
+
+        .signal-label {
+            position: absolute;
+            left: 10px;
+            font-size: 10px;
+            color: var(--text-primary);
+        }
+
+        .waveform-controls {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+
+        .time-slider {
+            flex: 1;
+            margin: 0 15px;
+        }
+
+        .waveform-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .close-waveform {
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0 10px;
+        }
+        
+        .close-waveform:hover {
+            color: var(--primary);
+        }
+        
+        .time-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-right: 10px;
+        }
+        
+        .signal-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        
+        .signal-color {
+            width: 15px;
+            height: 15px;
+            border-radius: 3px;
+            margin-right: 8px;
+        }
+        
+        .signal-name {
+            width: 80px;
+            font-size: 14px;
+        }
+        
+        .waveform-grid {
+            position: relative;
+            background-color: #1e1e1e;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .waveform-value {
+            stroke-width: 2;
+            shape-rendering: crispEdges;
+        }
+
+        /* 导入按钮样式 */
+        .import-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .import-btn:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .verilog-params {
+            display: flex;
+            flex-wrap: wrap; /* 允许换行 */
+            gap: 20px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.0);
+            border-radius: 8px;
+        }
+        
+        .param-group {
+            flex: 1;
+            min-width: 200px; /* 确保最小宽度 */
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.0);
+            padding: 7px;
+            border-radius: 6px;
+        }
+        
     </style>
 </head>
 <body>
     <div class="header">
         <div class="logo">
-            <div class="logo-icon">⚡</div>
             <div class="logo-text">ChipDesigner</div>
         </div>
         <div class="toolbar">
@@ -671,11 +871,11 @@
             <button class="btn" id="delete-mode-btn">
                 <span class="btn-icon">🗑️</span> 删除模式
             </button>
-            <button class="btn" id="show-all-layers">
-                <span class="btn-icon">👁️</span> 显示所有层
+            <button class="btn" id="preview-btn">
+                <span class="btn-icon">👀</span> 预览布局布线
             </button>
             <button class="btn" id="simulation-btn">
-                <span class="btn-icon">📊📊</span> 仿真模式
+                <span class="btn-icon">📈</span> 仿真模式
             </button>
         </div>
     </div>
@@ -715,37 +915,40 @@
             <div class="section-title">
                 <span>布线层 (点击切换显示)</span>
             </div>
+            <button class="btn2" id="show-all-layers" style="margin-bottom: 15px;"onclick="this.classList.toggle('active');">
+                <span class="btn2-icon">👁️</span> 显示/隐藏所有层
+            </button>
             <div class="layers-control">
                 <div class="layer-option active" data-layer="metal1">
-                    <div class="layer-color" style="background-color: #ffd54f;"></div>
+                    <div class="layer-color" style="background-color: #fcff4a;"></div>
                     <div class="layer-name">金属层 1 (水平)</div>
                     <svg class="layer-visibility" viewBox="0 0 24 24" fill="white">
                         <path d="M12 9c1.65 0 3 1.35 3 3s-1.35 3-3 3-3-1.35-3-3 1.35-3 3-3m0-4.5c5 0 9.27 3.11 11 7.5-1.73 4.39-6 7.5-11 7.5S2.73 16.39 1 12c1.73-4.39 6-7.5 11-7.5zM3.18 12c1.46 3.36 4.72 5.5 8.82 5.5s7.36-2.14 8.82-5.5C19.36 8.64 16.1 6.5 12 6.5S4.64 8.64 3.18 12z"/>
                     </svg>
                 </div>
                 <div class="layer-option active" data-layer="metal2">
-                    <div class="layer-color" style="background-color: #ff9800;"></div>
+                    <div class="layer-color" style="background-color: #ffac52;"></div>
                     <div class="layer-name">金属层 2 (垂直)</div>
                     <svg class="layer-visibility" viewBox="0 0 24 24" fill="white">
                         <path d="M12 9c1.65 0 3 1.35 3 3s-1.35 3-3 3-3-1.35-3-3 1.35-3 3-3m0-4.5c5 0 9.27 3.11 11 7.5-1.73 4.39-6 7.5-11 7.5S2.73 16.39 1 12c1.73-4.39 6-7.5 11-7.5zM3.18 12c1.46 3.36 4.72 5.5 8.82 5.5s7.36-2.14 8.82-5.5C19.36 8.64 16.1 6.5 12 6.5S4.64 8.64 3.18 12z"/>
                     </svg>
                 </div>
                 <div class="layer-option active" data-layer="metal3">
-                    <div class="layer-color" style="background-color: #4fc3f7;"></div>
+                    <div class="layer-color" style="background-color: #5ccbff;"></div>
                     <div class="layer-name">金属层 3</div>
                     <svg class="layer-visibility" viewBox="0 0 24 24" fill="white">
                         <path d="M12 9c1.65 0 3 1.35 3 3s-1.35 3-3 3-3-1.35-3-3 1.35-3 3-3m0-4.5c5 0 9.27 3.11 11 7.5-1.73 4.39-6 7.5-11 7.5S2.73 16.39 1 12c1.73-4.39 6-7.5 11-7.5zM3.18 12c1.46 3.36 4.72 5.5 8.82 5.5s7.36-2.14 8.82-5.5C19.36 8.64 16.1 6.5 12 6.5S4.64 8.64 3.18 12z"/>
                     </svg>
                 </div>
                 <div class="layer-option active" data-layer="metal4">
-                    <div class="layer-color" style="background-color: #81c784;"></div>
+                    <div class="layer-color" style="background-color: #a1e677;"></div>
                     <div class="layer-name">金属层 4</div>
                     <svg class="layer-visibility" viewBox="0 0 24 24" fill="white">
                         <path d="M12 9c1.65 0 3 1.35 3 3s-1.35 3-3 3-3-1.35-3-3 1.35-3 3-3m0-4.5c5 0 9.27 3.11 11 7.5-1.73 4.39-6 7.5-11 7.5S2.73 16.39 1 12c1.73-4.39 6-7.5 11-7.5zM3.18 12c1.46 3.36 4.72 5.5 8.82 5.5s7.36-2.14 8.82-5.5C19.36 8.64 16.1 6.5 12 6.5S4.64 8.64 3.18 12z"/>
                     </svg>
                 </div>
                 <div class="layer-option active" data-layer="metal5">
-                    <div class="layer-color" style="background-color: #ba68c8;"></div>
+                    <div class="layer-color" style="background-color: #edaeda;"></div>
                     <div class="layer-name">金属层 5</div>
                     <svg class="layer-visibility" viewBox="0 0 24 24" fill="white">
                         <path d="M12 9c1.65 0 3 1.35 3 3s-1.35 3-3 3-3-1.35-3-3 1.35-3 3-3m0-4.5c5 0 9.27 3.11 11 7.5-1.73 4.39-6 7.5-11 7.5S2.73 16.39 1 12c1.73-4.39 6-7.5 11-7.5zM3.18 12c1.46 3.36 4.72 5.5 8.82 5.5s7.36-2.14 8.82-5.5C19.36 8.64 16.1 6.5 12 6.5S4.64 8.64 3.18 12z"/>
@@ -780,7 +983,6 @@
                 <h3>电路仿真</h3>
                 <p id="simulation-description">选择仿真模式以加载输入输出</p>
             </div>
-            
             <div class="simulation-controls">
                 <div class="inputs-section">
                     <div class="section-title">输入端口</div>
@@ -793,7 +995,22 @@
                 </div>
                 
                 <button class="run-simulation" id="run-simulation">运行仿真</button>
+                <button class="run-simulation" id="waveform-btn">波形仿真</button>
             </div>
+        </div>
+    </div>
+
+    <!-- 在仿真面板中添加波形图容器 -->
+    <div class="waveform-container" id="waveform-container" style="display: none;">
+        <div class="waveform-header">
+            <div class="section-title">波形图</div>
+            <button class="close-waveform" id="close-waveform">×</button>
+        </div>
+        <canvas id="waveform-canvas" width="800" height="400"></canvas>
+        <div class="waveform-controls">
+            <span class="time-label">时间单位: </span>
+            <input type="range" min="1" max="32" value="8" class="time-slider" id="time-slider">
+            <button class="run-simulation" id="run-waveform">运行波形仿真</button>
         </div>
     </div>
     
@@ -807,11 +1024,27 @@
 
     <div class="modal" id="verilog-modal">
         <div class="modal-content" style="width: 76%;">
-            <div class="modal-header">编写Verilog文件，需要布局的模块请命名为top_module</div>
-            <textarea id="verilog-editor" style="width: 100%; height: 80%; background: #1e1e1e; color: #e0e0e0; border: 1px solid #333; padding: 10px; font-family: monospace; font-size: 14px;"></textarea>
+            <div class="modal-header">编写Verilog文件</div>
+            <!-- 新增文件名和模块名输入框 -->
+            
+            <textarea id="verilog-editor" style="width: 100%; height: 85%; background: #1e1e1e; color: #e0e0e0; border: 1px solid #333; padding: 10px; font-family: monospace; font-size: 14px;"></textarea>
             <div class="modal-footer">
-                <button class="btn btn-secondary" id="close-verilog">取消</button>
-                <button class="btn btn-primary" id="save-verilog">保存并预览</button>
+                <div class="param-group">
+                    <label for="verilog-filename">文件名（不含扩展名）:</label>
+                    <input type="text" id="verilog-filename" placeholder="例如：my_design">
+                </div>
+                <div class="param-group">
+                    <label for="verilog-modulename">布局模块名:</label>
+                    <input type="text" id="verilog-modulename" placeholder="例如：top_module">
+                </div>
+                <div class="param-group">
+                    <button class="import-btn" id="import-verilog-btn">
+                        <span class="btn-icon",style="right">📁</span> 导入Verilog文件
+                    </button>
+                    <input type="file" id="verilog-file-input" accept=".v" style="display: none;">
+                    <button class="btn btn-primary" id="save-verilog">保存并预览</button>
+                    <button class="btn btn-secondary" id="close-verilog">取消</button>
+                </div>
             </div>
         </div>
     </div>
@@ -1081,6 +1314,17 @@
         let isDraggingCanvas = false;
         let lastClientX = 0;
         let lastClientY = 0;
+
+        // 默认模块、文件名称
+        let filename = 'mydesign'
+        let moduelname = 'top_module'
+
+        let waveformMode = false;
+        let waveformData = {
+            timeUnits: 8,
+            signals: [],
+            timeScale: 50
+        };
         
         // DOM 元素
         const canvas = document.getElementById('circuit-canvas');
@@ -1138,11 +1382,295 @@ output D, Cout;
 endmodule`;
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('verilog-editor').value = verilogTemplate;
+            document.getElementById('verilog-filename').value = 'my_design';
+            document.getElementById('verilog-modulename').value = 'top_module';
         });
+        document.addEventListener('DOMContentLoaded', init);
         // 新增事件监听器
         document.getElementById('verilog-btn').addEventListener('click', showVerilogModal);
         document.getElementById('close-verilog').addEventListener('click', hideVerilogModal);
         document.getElementById('save-verilog').addEventListener('click', saveVerilog);
+
+        // 添加事件监听器
+        document.getElementById('waveform-btn').addEventListener('click', showWaveformView);
+        document.getElementById('run-waveform').addEventListener('click', runWaveformSimulation);
+        document.getElementById('close-waveform').addEventListener('click', function() {
+            document.getElementById('waveform-container').style.display = 'none';
+            waveformMode = false;
+        });
+        // 添加时间滑块事件
+        document.getElementById('time-slider').addEventListener('input', function(e) {
+            waveformData.timeUnits = parseInt(e.target.value);
+            initWaveformData();
+            runWaveformSimulation();
+        });
+        document.getElementById('import-verilog-btn').addEventListener('click', function() {
+            document.getElementById('verilog-file-input').click();
+        });
+        
+        document.getElementById('verilog-file-input').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('verilog-editor').value = e.target.result;
+                
+                // 尝试从文件名提取设计名称
+                const filename = file.name.replace('.v', '');
+                if (filename) {
+                    document.getElementById('verilog-filename').value = filename;
+                }
+                
+                alert('Verilog文件已导入！');
+            };
+            reader.readAsText(file);
+        });
+        function showWaveformView() {
+            const waveformContainer = document.getElementById('waveform-container');
+            waveformContainer.style.display = 'block';
+            waveformMode = true;
+            
+            // 初始化波形数据
+            initWaveformData();
+            
+            // 绘制波形
+            drawWaveform();
+
+            // 运行仿真
+            runWaveformSimulation();
+            
+            // 添加点击事件监听器
+            document.getElementById('waveform-canvas').addEventListener('click', handleWaveformClick);
+        }
+
+        // 初始化波形数据（改进版）
+        function initWaveformData() {
+            if (!simulationData) return;
+            
+            waveformData.signals = [];
+            
+            // 初始化输入信号
+            simulationData.input_ports.forEach((port, index) => {
+                const period = Math.pow(2, index);
+                const values = [];
+                
+                for (let t = 0; t < waveformData.timeUnits; t++) {
+                    // 根据周期生成交替值
+                    values.push(Math.floor(t / period) % 2);
+                }
+                
+                waveformData.signals.push({
+                    name: port,
+                    type: 'input',
+                    values: values,
+                    color: `hsl(${index * 60}, 75%, 72%)`
+                });
+            });
+            
+            // 初始化输出信号
+            simulationData.output_ports.forEach((port, index) => {
+                waveformData.signals.push({
+                    name: port,
+                    type: 'output',
+                    values: Array(waveformData.timeUnits).fill(0),
+                    color: `hsl(${(index + simulationData.input_ports.length) * 60}, 75%, 72%)`
+                });
+            });
+        }
+
+        // 优化波形图绘制
+        function drawWaveform() {
+            const canvas = document.getElementById('waveform-canvas');
+            // 增加画布尺寸
+            canvas.width = 1200;
+            canvas.height = 600;
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            // 清除画布
+            ctx.clearRect(0, 0, width, height);
+            
+            // 绘制网格背景
+            ctx.fillStyle = '#1e1e1e';
+            ctx.fillRect(0, 0, width, height);
+            
+            // 网格线样式
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            
+            // 减小信号高度
+            const signalHeight = 60;
+            const timeScale = 60; // 增加时间刻度密度
+            
+            // 垂直网格线（时间单位）
+            for (let i = 0; i <= waveformData.timeUnits; i++) {
+                const x = i * timeScale;
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, height);
+                ctx.stroke();
+                
+                // 时间标签 - 减小字体
+                ctx.fillStyle = '#999';
+                ctx.font = '10px Arial'; // 减小字体大小
+                ctx.fillText(`${i}`, x - 5, height - 5);
+            }
+            
+            // 水平网格线（信号）
+            for (let i = 0; i <= waveformData.signals.length; i++) {
+                const y = i * signalHeight;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(width, y);
+                ctx.stroke();
+            }
+            
+            // 绘制信号波形
+            waveformData.signals.forEach((signal, signalIndex) => {
+                const yBase = signalIndex * signalHeight + signalHeight / 2;
+                ctx.strokeStyle = signal.color;
+                ctx.lineWidth = 3;
+                
+                // 绘制信号标签 - 减小字体
+                ctx.fillStyle = signal.color;
+                ctx.font = '15px Arial'; // 减小字体大小
+                ctx.fillText(signal.name, 5, yBase - 5);
+                
+                // 绘制阶梯波形
+                for (let t = 0; t < waveformData.timeUnits; t++) {
+                    const x = t * timeScale;
+                    const nextX = (t + 1) * timeScale;
+                    const value = signal.values[t];
+                    const yValue = yBase - (value * 10); // 减小值变化幅度
+                    
+                    // 当前时间点的水平线（从左到右）
+                    ctx.beginPath();
+                    ctx.moveTo(x, yValue);
+                    ctx.lineTo(nextX, yValue);
+                    ctx.stroke();
+                    
+                    // 到下一个值的垂直线（如果下一个值存在）
+                    if (t < waveformData.timeUnits - 1) {
+                        const nextValue = signal.values[t + 1];
+                        if (value !== nextValue) {
+                            ctx.beginPath();
+                            ctx.moveTo(nextX, yValue);
+                            ctx.lineTo(nextX, yBase - (nextValue * 10));
+                            ctx.stroke();
+                        }
+                    }
+                    
+                    // 绘制时间点标记（方形）
+                    ctx.fillStyle = signal.color;
+                    ctx.fillRect(x - 2, yValue - 2, 4, 4); // 减小标记尺寸
+                    
+                    // 添加点击区域（整个时间单位）
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+                    ctx.fillRect(x, signalIndex * signalHeight, timeScale, signalHeight);
+                }
+            });
+            
+            // 添加信号类型标签 - 减小字体
+            ctx.fillStyle = '#777';
+            ctx.font = 'italic 10px Arial'; // 减小字体大小
+            waveformData.signals.forEach((signal, index) => {
+                const y = index * signalHeight + 15;
+                ctx.fillText(`(${signal.type})`, 80, y);
+            });
+        }
+
+        // 处理波形图点击事件
+        function handleWaveformClick(e) {
+            if (!waveformMode || !simulationData) return;
+            
+            const canvas = document.getElementById('waveform-canvas');
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const signalHeight = 50; // 信号高度
+            const timeScale = 73.68;    // 时间刻度密度
+            
+            // 确定点击的信号行
+            const signalIndex = Math.floor(y / signalHeight);
+            if (signalIndex < 0 || signalIndex >= waveformData.signals.length) return;
+            
+            const signal = waveformData.signals[signalIndex];
+            // 只允许修改输入信号
+            if (signal.type !== 'input') return;
+            
+            // 确定点击的时间点
+            const timeIndex = Math.floor(x / timeScale);
+            if (timeIndex >= 0 && timeIndex < waveformData.timeUnits) {
+                // 翻转值 (0->1, 1->0)
+                nowva = waveformData.signals[signalIndex].values[timeIndex];
+                for(let i = timeIndex; i < waveformData.timeUnits; i++) {
+                    waveformData.signals[signalIndex].values[i] = nowva === 0 ? 1 : 0;
+                }
+                
+                // 重新绘制波形
+                drawWaveform();
+                
+                // 自动运行仿真更新输出
+                runWaveformSimulation();
+            }
+        }
+
+        function runWaveformSimulation() {
+            if (!simulationData || !waveformMode) return;
+            
+            // 为每个时间点计算输出
+            for (let t = 0; t < waveformData.timeUnits; t++) {
+                // 创建当前时间点的输入组合
+                const inputs = {};
+                waveformData.signals
+                    .filter(s => s.type === 'input')
+                    .forEach(signal => {
+                        inputs[signal.name] = signal.values[t];
+                    });
+                
+                // 在真值表中查找匹配项
+                const matchingRow = findMatchingRow(inputs);
+                
+                // 更新输出信号
+                waveformData.signals
+                    .filter(s => s.type === 'output')
+                    .forEach(outputSignal => {
+                        if (matchingRow) {
+                            outputSignal.values[t] = parseInt(matchingRow[outputSignal.name]);
+                        } else {
+                            outputSignal.values[t] = 0; // 未找到匹配项
+                        }
+                    });
+            }
+            
+            // 重新绘制波形
+            drawWaveform();
+        }
+
+        function findMatchingRow(inputs) {
+            if (!simulationData || !simulationData.table) return null;
+            
+            for (const row of simulationData.table) {
+                let match = true;
+                
+                for (const inputPort of simulationData.input_ports) {
+                    if (parseInt(row[inputPort]) !== inputs[inputPort]) {
+                        match = false;
+                        break;
+                    }
+                }
+                
+                if (match) {
+                    return row;
+                }
+            }
+            
+            return null;
+        }
+
         
         function showVerilogModal() {
             document.getElementById('verilog-modal').classList.add('active');
@@ -1168,7 +1696,16 @@ endmodule`;
         
         // 加载仿真数据
         function loadSimulationData() {
-            fetch('http://localhost:5000/get_simulation_data')
+            fetch('http://localhost:5000/get_simulation_data',{
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    filename: filename,
+                    modulename: modulename
+                }),
+            })
                 .then(response => response.json())
                 .then(data => {
                     simulationData = data;
@@ -1268,14 +1805,24 @@ endmodule`;
         
         function saveVerilog() {
             const verilogCode = document.getElementById('verilog-editor').value;
-            
+            filename = document.getElementById('verilog-filename').value;
+            modulename = document.getElementById('verilog-modulename').value;
+            if (!filename || !modulename) {
+                alert('请填写文件名和模块名！');
+                return;
+            }
+
             // 发送到后端
             fetch('http://localhost:5000/upload_verilog', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ verilog: verilogCode }),
+                body: JSON.stringify({ 
+                    verilog: verilogCode,
+                    filename: filename,
+                    modulename: modulename
+                }),
             })
             .then(response => {
                 if (!response.ok) {
@@ -1285,6 +1832,7 @@ endmodule`;
             })
             .then(data => {
                 alert('Verilog文件已发送处理！请耐心等待解析与布局完成');
+                hideVerilogModal();
             })
             .catch((error) => {
                 console.error('发送失败:', error);
@@ -1430,6 +1978,22 @@ endmodule`;
             
             // 添加鼠标滚轮缩放
             canvasContainer.addEventListener('wheel', handleWheel, { passive: false });
+
+            // 新增预览按钮事件
+            document.getElementById('preview-btn').addEventListener('click', function() {
+                fetch('http://localhost:5000/preview')
+                    .then(response => {
+                        if (response.ok) {
+                            alert('预览命令已发送');
+                        } else {
+                            throw new Error('预览失败');
+                        }
+                    })
+                    .catch(error => {
+                        alert(error.message);
+                    });
+            });
+
         }
         
         function handleWheel(e) {
