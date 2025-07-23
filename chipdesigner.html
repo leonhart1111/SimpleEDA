@@ -8,11 +8,11 @@
         /* 原有样式保持不变 */
         :root {
             --primary: #64a9a2;
-            --primary-dark: #267263;
-            --secondary: #74d09d;
-            --dark-bg: #121212;
+            --primary-dark: #0d3337;
+            --secondary: #30e6e6;
+            --dark-bg: #011014;
             --panel-bg: #1e1e1e;
-            --grid-color: #333;
+            --grid-color: #253937;
             --text-primary: #e0e0e0;
             --text-secondary: #9e9e9e;
             --border-color: #333;
@@ -66,6 +66,13 @@
             font-size: 22px;
             font-weight: 700;
             letter-spacing: 1px;
+        }
+
+        .sub-title {
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: 5px;
+            color: var(--primary);
         }
         
         .toolbar {
@@ -121,8 +128,8 @@
         }
         
         .btn.active {
-            background: var(--secondary);
-            box-shadow: 0 0 15px rgba(20, 229, 173, 0.4);
+            background: #0ABAB5;
+            box-shadow: 0 0 10px #0abab46e;
         }
         
         .btn-icon {
@@ -503,6 +510,14 @@
             user-select: none;
         }
 
+        .mos-label {
+            fill: var(--text-primary);
+            font-size: 18px;
+            text-anchor: left;
+            pointer-events: none;
+            user-select: none;
+        }
+
         /* 添加的样式用于连接指示 */
         .connection-indicator {
             stroke: #00ff00;
@@ -545,10 +560,11 @@
             fill: #54c9b3;
             font-size: 14px;
             font-weight: bold;
+            display: flex;
         }
         .fixed-wire {
             stroke-width: 2;
-            stroke-dasharray: 5,3;
+            /* stroke-dasharray: 5,3; */
             pointer-events: none;
         }
         .fixed-wire.metal1 {
@@ -725,8 +741,8 @@
             background-color: #1e1e1e;
             border: 1px solid var(--border-color);
             border-radius: 4px;
-            width: 100%;
-            height: 500px;
+            width: auto;
+            height: auto;
             margin-bottom: 15px;
         }
 
@@ -769,9 +785,9 @@
         }
         
         .time-label {
-            font-size: 12px;
+            font-size: 10px;
             color: var(--text-secondary);
-            margin-right: 10px;
+            margin-left: 20px;
         }
         
         .signal-row {
@@ -850,11 +866,12 @@
 <body>
     <div class="header">
         <div class="logo">
+            <div class = "logo-icon">💧</div>
             <div class="logo-text">ChipDesigner</div>
         </div>
         <div class="toolbar">
             <button class="btn" id="verilog-btn">
-                <span class="btn-icon">📝</span> 编写Verilog
+                <span class="btn-icon">✏️</span> 编写Verilog
             </button>
             <button class="btn active" id="select-mode-btn">
                 <span class="btn-icon">🔧</span> 选择模式
@@ -872,7 +889,7 @@
                 <span class="btn-icon">🗑️</span> 删除模式
             </button>
             <button class="btn" id="preview-btn">
-                <span class="btn-icon">👀</span> 预览布局布线
+                <span class="btn-icon">📑</span> 他页预览
             </button>
             <button class="btn" id="simulation-btn">
                 <span class="btn-icon">📈</span> 仿真模式
@@ -981,7 +998,7 @@
         <div class="simulation-panel">
             <div class="simulation-header">
                 <h3>电路仿真</h3>
-                <p id="simulation-description">选择仿真模式以加载输入输出</p>
+                <p id="simulation-description">正在仿真……请等待仿真结果加载中</p>
             </div>
             <div class="simulation-controls">
                 <div class="inputs-section">
@@ -1003,15 +1020,12 @@
     <!-- 在仿真面板中添加波形图容器 -->
     <div class="waveform-container" id="waveform-container" style="display: none;">
         <div class="waveform-header">
-            <div class="section-title">波形图</div>
+            <div class="sub-title">波形图</div>
+            <span class="time-label">时间范围: </span>
+            <input type="range" min="0" max="100" value="4" class="time-slider" id="time-slider">
             <button class="close-waveform" id="close-waveform">×</button>
         </div>
         <canvas id="waveform-canvas" width="800" height="400"></canvas>
-        <div class="waveform-controls">
-            <span class="time-label">时间单位: </span>
-            <input type="range" min="1" max="32" value="8" class="time-slider" id="time-slider">
-            <button class="run-simulation" id="run-waveform">运行波形仿真</button>
-        </div>
     </div>
     
     <div class="status-bar">
@@ -1039,11 +1053,12 @@
                 </div>
                 <div class="param-group">
                     <button class="import-btn" id="import-verilog-btn">
-                        <span class="btn-icon",style="right">📁</span> 导入Verilog文件
+                        <!-- <span class="btn-icon",style="right">📂</span> -->
+                        导入Verilog文件
                     </button>
                     <input type="file" id="verilog-file-input" accept=".v" style="display: none;">
-                    <button class="btn btn-primary" id="save-verilog">保存并预览</button>
-                    <button class="btn btn-secondary" id="close-verilog">取消</button>
+                    <button class="btn btn-primary" id="save-verilog">保存并绘制</button>
+                    <button class="btn btn-secondary" id="close-verilog">退出</button>
                 </div>
             </div>
         </div>
@@ -1302,6 +1317,11 @@
             metal4: true,
             metal5: true
         };
+        let isPanning = false;
+        let panStartX = 0;
+        let panStartY = 0;
+        let panOffsetX = 0;
+        let panOffsetY = 0;
 
         // 仿真相关变量
         let simulationMode = false;
@@ -1321,7 +1341,7 @@
 
         let waveformMode = false;
         let waveformData = {
-            timeUnits: 8,
+            timeUnits: 16,
             signals: [],
             timeScale: 50
         };
@@ -1393,14 +1413,13 @@ endmodule`;
 
         // 添加事件监听器
         document.getElementById('waveform-btn').addEventListener('click', showWaveformView);
-        document.getElementById('run-waveform').addEventListener('click', runWaveformSimulation);
         document.getElementById('close-waveform').addEventListener('click', function() {
             document.getElementById('waveform-container').style.display = 'none';
             waveformMode = false;
         });
         // 添加时间滑块事件
         document.getElementById('time-slider').addEventListener('input', function(e) {
-            waveformData.timeUnits = parseInt(e.target.value);
+            waveformData.timeUnits = parseInt(Math.pow(2, Math.ceil(e.target.value/10)));
             initWaveformData();
             runWaveformSimulation();
         });
@@ -1411,18 +1430,23 @@ endmodule`;
         document.getElementById('verilog-file-input').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
-            
             const reader = new FileReader();
             reader.onload = function(e) {
-                document.getElementById('verilog-editor').value = e.target.result;
+                const content = e.target.result;
+                document.getElementById('verilog-editor').value = content;
                 
                 // 尝试从文件名提取设计名称
                 const filename = file.name.replace('.v', '');
                 if (filename) {
                     document.getElementById('verilog-filename').value = filename;
                 }
-                
-                alert('Verilog文件已导入！');
+                const moduleMatches = [...content.matchAll(/module\s+(\w+)(\s*(#|\(|;|$))/g)];
+                if (moduleMatches.length > 0) {
+                    const lastName = moduleMatches[moduleMatches.length-1][1];
+                    document.getElementById('verilog-modulename').value = lastName;
+                } else {
+                    console.warn('未找到模块定义');
+                }
             };
             reader.readAsText(file);
         });
@@ -1464,7 +1488,7 @@ endmodule`;
                     name: port,
                     type: 'input',
                     values: values,
-                    color: `hsl(${index * 60}, 75%, 72%)`
+                    color: `hsl(${5*index%13 * 30}, 100%, 92%)`
                 });
             });
             
@@ -1474,7 +1498,7 @@ endmodule`;
                     name: port,
                     type: 'output',
                     values: Array(waveformData.timeUnits).fill(0),
-                    color: `hsl(${(index + simulationData.input_ports.length) * 60}, 75%, 72%)`
+                    color: `hsl(${5*(index + simulationData.input_ports.length) % 13 * 30}, 72%, 50%)`
                 });
             });
         }
@@ -1483,21 +1507,19 @@ endmodule`;
         function drawWaveform() {
             const canvas = document.getElementById('waveform-canvas');
             // 增加画布尺寸
-            canvas.width = 1200;
-            canvas.height = 600;
             const ctx = canvas.getContext('2d');
-            const width = canvas.width;
-            const height = canvas.height;
+            canvas.width = 60*waveformData.timeUnits;
+            canvas.height = 60*waveformData.signals.length;
             
             // 清除画布
-            ctx.clearRect(0, 0, width, height);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             // 绘制网格背景
-            ctx.fillStyle = '#1e1e1e';
-            ctx.fillRect(0, 0, width, height);
+            ctx.fillStyle = '#011014';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
             
             // 网格线样式
-            ctx.strokeStyle = '#333';
+            ctx.strokeStyle = '#253937';
             ctx.lineWidth = 1;
             
             // 减小信号高度
@@ -1509,13 +1531,13 @@ endmodule`;
                 const x = i * timeScale;
                 ctx.beginPath();
                 ctx.moveTo(x, 0);
-                ctx.lineTo(x, height);
+                ctx.lineTo(x, signalHeight*waveformData.signals.length);
                 ctx.stroke();
                 
                 // 时间标签 - 减小字体
                 ctx.fillStyle = '#999';
                 ctx.font = '10px Arial'; // 减小字体大小
-                ctx.fillText(`${i}`, x - 5, height - 5);
+                ctx.fillText(`${i}`, x - 10, 10);
             }
             
             // 水平网格线（信号）
@@ -1523,13 +1545,13 @@ endmodule`;
                 const y = i * signalHeight;
                 ctx.beginPath();
                 ctx.moveTo(0, y);
-                ctx.lineTo(width, y);
+                ctx.lineTo(timeScale*waveformData.timeUnits, y);
                 ctx.stroke();
             }
             
             // 绘制信号波形
             waveformData.signals.forEach((signal, signalIndex) => {
-                const yBase = signalIndex * signalHeight + signalHeight / 2;
+                const yBase = signalIndex * signalHeight + signalHeight * 0.75 - 1;
                 ctx.strokeStyle = signal.color;
                 ctx.lineWidth = 3;
                 
@@ -1543,7 +1565,7 @@ endmodule`;
                     const x = t * timeScale;
                     const nextX = (t + 1) * timeScale;
                     const value = signal.values[t];
-                    const yValue = yBase - (value * 10); // 减小值变化幅度
+                    const yValue = yBase - (value * 25);
                     
                     // 当前时间点的水平线（从左到右）
                     ctx.beginPath();
@@ -1557,7 +1579,7 @@ endmodule`;
                         if (value !== nextValue) {
                             ctx.beginPath();
                             ctx.moveTo(nextX, yValue);
-                            ctx.lineTo(nextX, yBase - (nextValue * 10));
+                            ctx.lineTo(nextX, yBase - (nextValue * 25));
                             ctx.stroke();
                         }
                     }
@@ -1576,8 +1598,9 @@ endmodule`;
             ctx.fillStyle = '#777';
             ctx.font = 'italic 10px Arial'; // 减小字体大小
             waveformData.signals.forEach((signal, index) => {
-                const y = index * signalHeight + 15;
-                ctx.fillText(`(${signal.type})`, 80, y);
+                const y = index * signalHeight + 20;
+                const typee = signal.type === 'input' ? 'IN' : 'OUT';
+                ctx.fillText(`${typee}`, 28, y-8);
             });
         }
 
@@ -1590,8 +1613,8 @@ endmodule`;
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
             
-            const signalHeight = 50; // 信号高度
-            const timeScale = 73.68;    // 时间刻度密度
+            const signalHeight = 60; // 信号高度
+            const timeScale = 60;    // 时间刻度密度
             
             // 确定点击的信号行
             const signalIndex = Math.floor(y / signalHeight);
@@ -1691,6 +1714,8 @@ endmodule`;
                 loadSimulationData();
             } else {
                 document.getElementById('simulation-btn').classList.remove('active');
+                document.getElementById('waveform-container').style.display = 'none';
+                waveformMode = false;
             }
         });
         
@@ -1824,14 +1849,28 @@ endmodule`;
                     modulename: modulename
                 }),
             })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('网络响应不正常');
-                }
-                return response.json();
-            })
+            .then(response => response.json()) // 正确解析JSON响应
             .then(data => {
-                alert('Verilog文件已发送处理！请耐心等待解析与布局完成');
+                if (data.status === 'success') {
+                    // 清除画布
+                    clearCanvas();
+                    alert(data.message);
+                    // 获取顶层模块
+                    const layoutTop = getTopModule(data.layout);
+                    const routeTop = getTopModule(data.route);
+                    
+                    // 解析布局数据
+                    parseLayout(layoutTop);
+                    
+                    // 解析布线数据
+                    parseRoute(routeTop);
+                    
+                    // 调整视图到中心
+                    centerComponents();
+
+                } else {
+                    throw new Error(data.message || '未知错误');
+                }
                 hideVerilogModal();
             })
             .catch((error) => {
@@ -1849,6 +1888,7 @@ endmodule`;
             updateLayerVisibility();
             setupFileDropEvents();
             applyTransform();
+            canvasContainer.style.cursor = 'grab';
         }
         
         function setupFileDropEvents() {
@@ -1913,6 +1953,10 @@ endmodule`;
                     }
                 });
             });
+            canvasContainer.addEventListener('mousedown', startPan);
+            canvasContainer.addEventListener('mousemove', doPan);
+            canvasContainer.addEventListener('mouseup', stopPan);
+            canvasContainer.addEventListener('mouseleave', stopPan);
             
             // 图层选择和可见性切换
             document.querySelectorAll('.layer-option').forEach(option => {
@@ -1983,9 +2027,7 @@ endmodule`;
             document.getElementById('preview-btn').addEventListener('click', function() {
                 fetch('http://localhost:5000/preview')
                     .then(response => {
-                        if (response.ok) {
-                            alert('预览命令已发送');
-                        } else {
+                        if (!response.ok) {
                             throw new Error('预览失败');
                         }
                     })
@@ -1994,6 +2036,48 @@ endmodule`;
                     });
             });
 
+        }
+
+        function startPan(e) {
+            // 点击在元件上时不启动画布拖拽
+            if (e.button === 0 && !draggingComponent && currentMode === 'select' && !e.target.closest('[data-id]') || currentMode !== 'select') {  // 只处理左键拖拽
+                isDraggingCanvas = true;
+                lastClientX = e.clientX;
+                lastClientY = e.clientY;
+                canvasContainer.classList.add('dragging');
+                canvasContainer.style.cursor = 'grabbing';
+                e.preventDefault(); // 防止文本选择
+                e.stopPropagation(); // 阻止事件冒泡
+            }
+        }
+
+        function doPan(e) {
+            if (!isDraggingCanvas || draggingComponent) return;
+            const dx = e.clientX - lastClientX;
+            const dy = e.clientY - lastClientY;
+            
+            panX += dx;
+            panY += dy;
+            
+            // 更新画布位置
+            applyTransform();
+            
+            lastClientX = e.clientX;
+            lastClientY = e.clientY;
+        }
+
+        // 停止拖拽画布
+        function stopPan() {
+            isDraggingCanvas = false;
+            canvasContainer.classList.remove('dragging');
+            canvasContainer.style.cursor = 'grab';
+        }
+
+        // 更新应用变换的函数
+        function applyTransform() {
+            // 添加平移偏移量
+            canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
+            canvas.style.transformOrigin = '0 0';
         }
         
         function handleWheel(e) {
@@ -2015,7 +2099,7 @@ endmodule`;
             document.getElementById('delete-mode-btn').classList.toggle('active', mode === 'delete');
             
             // 重置选择状态
-            if (mode === 'wire') {
+            if (mode !== 'select') {
                 selectedComponent = null;
                 document.querySelectorAll('.component-item').forEach(i => i.style.border = '');
             }
@@ -2033,13 +2117,30 @@ endmodule`;
         }
         
         function handleCanvasMousedown(e) {
-            // 处理画布拖动
-            if (e.button === 1 || (e.button === 0 && e.shiftKey)) { // 中键或Shift+左键
-                isDraggingCanvas = true;
-                lastClientX = e.clientX;
-                lastClientY = e.clientY;
-                canvasContainer.classList.add('dragging');
-                return;
+            // 已在startPan中处理画布拖动
+            if (currentMode === 'select') {
+                const element = e.target.closest('[data-id]');
+                if (element) {
+                    // 停止任何可能的画布拖拽
+                    isDraggingCanvas = false;
+                    canvasContainer.classList.remove('dragging');
+                    
+                    draggingComponent = components.find(c => c.id === element.dataset.id);
+                    if (draggingComponent) {
+                        const {x, y} = getCanvasCoords(e.clientX, e.clientY);
+                        startX = x;
+                        startY = y;
+                        componentStartX = draggingComponent.x;
+                        componentStartY = draggingComponent.y;
+                        
+                        // 保存与当前元件相连的连线
+                        connectedWires = wires.filter(wire => 
+                            wire.start.parent === draggingComponent.id || wire.end.parent === draggingComponent.id
+                        );
+                        e.stopPropagation(); // 阻止事件冒泡到画布拖拽
+                        e.preventDefault(); // 防止画布拖动
+                    }
+                }
             }
             
             if (currentMode === 'select') {
@@ -2090,6 +2191,7 @@ endmodule`;
                 document.querySelectorAll(`[data-id='${draggingComponent.id}']`).forEach(el => el.remove());
                 document.querySelectorAll(`.component-label[data-parent='${draggingComponent.id}']`).forEach(el => el.remove());
                 document.querySelectorAll(`.pin[data-parent='${draggingComponent.id}']`).forEach(el => el.remove());
+                document.querySelectorAll(`.mos-label[data-parent='${draggingComponent.id}']`).forEach(el => el.remove());
                 
                 // 重新渲染元件
                 renderComponent(draggingComponent);
@@ -2165,8 +2267,11 @@ endmodule`;
         }
 
         function handleCanvasMouseup(e) {
-            isDraggingCanvas = false;
-            canvasContainer.classList.remove('dragging');
+            if (isDraggingCanvas) {
+                isDraggingCanvas = false;
+                canvasContainer.classList.remove('dragging');
+                canvasContainer.style.cursor = 'grab';
+            }
             
             if (draggingComponent) {
                 // 更新连线的位置
@@ -2294,30 +2399,33 @@ endmodule`;
                 }
             }
         }
-
+        // 寻找最近的引脚
         function findPinAt(x, y) {
-            const tolerance = 10; // 点击容差范围
-            for (const comp of components) {
-                for (const pin of comp.pins) {
-                    const dx = Math.abs(pin.x - x);
-                    const dy = Math.abs(pin.y - y);
-                    if (dx < tolerance && dy < tolerance) {
-                        return {
-                            id: pin.id,
-                            x: pin.x,
-                            y: pin.y,
-                            parent: comp.id,
-                            type: pin.type
-                        };
+            tolerance = 0.1; // 点击容差范围
+            while(tolerance < 20){
+                for (const comp of components) {
+                    for (const pin of comp.pins) {
+                        const dx = Math.abs(pin.x - x);
+                        const dy = Math.abs(pin.y - y);
+                        if (dx < tolerance && dy < tolerance) {
+                            return {
+                                id: pin.id,
+                                x: pin.x,
+                                y: pin.y,
+                                parent: comp.id,
+                                type: pin.type
+                            };
+                        }
                     }
                 }
+                tolerance+=0.1;
             }
             return null;
         }
         
         // 在画布上放置元件
         function placeComponent(type, x, y, name = null) {
-            const id = `comp_${Date.now()}`;
+            const id = `comp_${Date.now()}` + String(components.length);
             const component = { 
                 id, 
                 type, 
@@ -2494,9 +2602,9 @@ endmodule`;
                 
                 // 添加标签
                 const label = document.createElementNS(ns, 'text');
-                label.setAttribute('x', component.x);
-                label.setAttribute('y', component.type === 'nmos' || component.type === 'pmos' ? component.y + gridSize*5 : component.y + 25);
-                label.setAttribute('class', 'component-label');
+                label.setAttribute('x', component.type === 'nmos' || component.type === 'pmos' ? component.x + gridSize*0.5 : component.x);
+                label.setAttribute('y', component.type === 'nmos' || component.type === 'pmos' ? component.y + gridSize*1 : component.y + 25);
+                label.setAttribute('class', component.type === 'nmos' || component.type === 'pmos' ? 'mos-label' : 'component-label');
                 label.setAttribute('data-parent', component.id);
                 label.textContent = component.name;
                 canvas.appendChild(label);
@@ -2638,6 +2746,13 @@ endmodule`;
                     wire.style.display = layerVisibility[layer] ? '' : 'none';
                 }
             });
+            document.querySelectorAll('.fixed-wire').forEach(wire => {
+                const layer = Array.from(wire.classList).find(cls => 
+                    ['metal1', 'metal2', 'metal3', 'metal4', 'metal5'].includes(cls));
+                if (layer) {
+                    wire.style.display = layerVisibility[layer] ? '' : 'none';
+                }
+            });
             
             // 更新图层控制中的可见性图标
             document.querySelectorAll('.layer-option').forEach(option => {
@@ -2673,18 +2788,33 @@ endmodule`;
                     circuit: circuitData
                 }),
             })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('网络响应不正常');
-                }
-                return response.json();
-            })
+            .then(response => response.json()) // 正确解析JSON响应
             .then(data => {
-                alert('布局数据已成功发送到本地服务！请耐心等待布局布线完成');
+                if (data.status === 'success') {
+                    // 清除画布
+                    clearCanvas();
+                    alert(data.message);
+                    // 获取顶层模块
+                    const layoutTop = getTopModule(data.layout);
+                    const routeTop = getTopModule(data.route);
+                    
+                    // 解析布局数据
+                    parseLayout(layoutTop);
+                    
+                    // 解析布线数据
+                    parseRoute(routeTop);
+                    
+                    // 调整视图到中心
+                    centerComponents();
+
+                } else {
+                    throw new Error(data.message || '未知错误');
+                }
+                hideExportModal();
             })
             .catch((error) => {
                 console.error('发送失败:', error);
-                alert('发送失败，请确保本地服务app.py已启动并运行在http://localhost:5000');
+                alert('布局布线时出错: ' + error.message);
             });
         }
         
@@ -2742,7 +2872,7 @@ endmodule`;
                         type = (portName.toLowerCase().includes('vdd') || portName === 'VCC') ? 'vcc' : 'gnd';
                     }
                     
-                    placeComponent(type, 20 * portLayout.x, 20 * portLayout.y, portName);
+                    placeComponent(type, 100 + 20 * (portLayout.x + portLayout.width / 2), 100 + 20 * (portLayout.y + portLayout.height / 2), portName);
                 }
             }
             
@@ -2751,7 +2881,7 @@ endmodule`;
                 for (const mosName in moduleData.mosfets) {
                     const mosData = moduleData.mosfets[mosName];
                     const mosLayout = mosData.layout || {};
-                    placeComponent(mosData.type, 20 * mosLayout.x, 20 * mosLayout.y, mosName);
+                    placeComponent(mosData.type, 100 + 20 * mosLayout.x, 100 + 20 * mosLayout.y, mosName);
                 }
             }
             
@@ -2764,7 +2894,7 @@ endmodule`;
         }
 
         function addWire(netName, segments, vias) {
-            const wireId = `wire_${Date.now()}`;
+            const wireId = `wire_${Date.now()}` + String(wires.length);
             const wire = {
                 id: wireId,
                 netName,
@@ -2826,36 +2956,44 @@ endmodule`;
 
         function parseRoute(routeData) {
             if (routeData.nets) {
-                routeData.nets.forEach(net => {
+                routeData.nets.forEach(net => {                    
                     const segments = [];
                     const vias = [];
-
                     // 解析线段
-                    net.segments.forEach((seg, index) => {
-                        const startPx = gridToPixels(seg.start);
-                        const endPx = gridToPixels(seg.end);
-
-                        segments.push({
-                            id: `seg_${net.name}_${index}`,
-                            start: { x: startPx.x, y: startPx.y },
-                            end: { x: endPx.x, y: endPx.y },
-                            layer: `metal${seg.layer}`
+                    if (net.segments){
+                        net.segments.forEach(seg => {
+                            const startPx = 100 + 20 * seg.start.x;
+                            const startPy = 100 + 20 * seg.start.y;
+                            const endPx = 100 + 20 * seg.end.x;
+                            const endPy = 100 + 20 * seg.end.y;
+                            segments.push({
+                                id: `seg_${net.name}_${segments.length}`,
+                                start: { x: startPx, y: startPy },
+                                end: { x: endPx, y: endPy },
+                                layer: `metal${seg.layer + 1}`
+                            });
                         });
-                    });
-
+                    }
+                    else alert(net.name + '没有线段')
                     // 解析过孔
-                    net.vias.forEach((via, index) => {
-                        const viaPx = gridToPixels(via);
-                        vias.push({
-                            id: `via_${net.name}_${index}`,
-                            x: viaPx.x,
-                            y: viaPx.y
-                        });
-                    });
+                    if (net.vias) {
+                        net.vias.forEach(via => {
+                            const viaPx = 100 + 20 * via.x;
+                            const viaPy = 100 + 20 * via.y;
 
+                            vias.push({
+                                id: `via_${net.name}_${vias.length}`,
+                                x: viaPx,
+                                y: viaPy
+                            });
+                        });
+                    }
                     // 添加完整的布线网络
                     addWire(net.name, segments, vias);
                 });
+            }
+            else {
+                alert('真的有网络吗？');
             }
 
             // 递归处理子模块
@@ -2884,9 +3022,6 @@ endmodule`;
             
             // 解析布线文件
             parseRoute(routeTop);
-            
-            // 计算元件中心并居中显示
-            centerComponents();
             
             // 隐藏导入模态框
             hideImportModal();
@@ -2920,7 +3055,7 @@ endmodule`;
                 const layerClass = `metal${segment.layer}`;
                 line.setAttribute('class', `fixed-wire ${layerClass}`);
                 line.setAttribute('stroke-width', 2);
-                line.setAttribute('stroke-dasharray', '5,3');
+                // line.setAttribute('stroke-dasharray', '5,3');
                 line.setAttribute('data-wire-id', wire.id);
                 canvas.appendChild(line);
             });
@@ -2940,34 +3075,10 @@ endmodule`;
             }
         }
         
-        function centerComponents() {
-            if (components.length === 0) return;
-            
-            // 计算所有元件的边界
-            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-            components.forEach(comp => {
-                minX = Math.min(minX, comp.x);
-                minY = Math.min(minY, comp.y);
-                maxX = Math.max(maxX, comp.x + (comp.type === 'nmos' || comp.type === 'pmos' ? gridSize*6 : 0));
-                maxY = Math.max(maxY, comp.y + (comp.type === 'nmos' || comp.type === 'pmos' ? gridSize*4 : 0));
-            });
-            
-            // 计算中心点
-            const centerX = (minX + maxX) / 2;
-            const centerY = (minY + maxY) / 2;
-            
-            // 计算视口中心
-            const containerRect = canvasContainer.getBoundingClientRect();
-            const viewportCenterX = containerRect.width / 2;
-            const viewportCenterY = containerRect.height / 2;
-            
-            // 调整平移量使元件中心位于视口中心
-            panX = viewportCenterX - centerX * zoomLevel;
-            panY = viewportCenterY - centerY * zoomLevel;
-            
-            applyTransform();
+        function centerComponents(){
+
         }
-                
+
         function downloadJson() {
             let data, filename;
             
@@ -3308,6 +3419,7 @@ endmodule`;
                 document.querySelectorAll(`[data-id='${comp.id}']`).forEach(el => el.remove());
                 document.querySelectorAll(`.component-label[data-parent='${comp.id}']`).forEach(el => el.remove());
                 document.querySelectorAll(`.pin[data-parent='${comp.id}']`).forEach(el => el.remove());
+                document.querySelectorAll(`.mos-label[data-parent='${comp.id}']`).forEach(el => el.remove());
             });
             components = [];
             

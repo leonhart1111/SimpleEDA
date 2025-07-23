@@ -57,18 +57,6 @@ def run_layout_routing(filename, modulename):
             f.write("\n=== 错误输出:\n")
             f.write(result.stderr)
             
-        print("运行see.py...")
-        see_result = subprocess.run(
-            ['python', 'see.py'],
-            capture_output=True,
-            text=True
-        )
-        print("see.py输出:")
-        print(see_result.stdout)
-        if see_result.stderr:
-            print("see.py错误:")
-            print(see_result.stderr)
-            
         print(f"布局布线完成!日志文件: {log_filename}")
     except subprocess.TimeoutExpired:
         print("布局布线程序运行超时")
@@ -110,9 +98,23 @@ def process_verilog(verilog_code,filename, modulename):
         json_filename = f"{filename}.v.json"
         run_layout_routing(json_filename, modulename)
         
-        return True, "Verilog处理成功，布局布线完成!"
+        # 读取布局和布线结果文件
+        try:
+            with open('Layout_after.json', 'r') as f:
+                layout_data = json.load(f)
+            with open('Route_after.json', 'r') as f:
+                route_data = json.load(f)
+            print ('布局布线结果读取成功')
+        except Exception as e:
+            return False, f"读取布局布线结果失败: {str(e)}"
+        
+        return True, {
+            "message": "Verilog处理成功，布局布线完成!",
+            "layout": layout_data,
+            "route": route_data
+        }
     except Exception as e:
-        return False, f"处理Verilog时出错: {str(e)}"
+        return False, f"app处理Verilog时出错: {str(e)}"
 
 # 新增预览布局布线路由
 @app.route('/preview', methods=['GET'])
@@ -160,25 +162,27 @@ def upload_design():
         save_design(circuit_data)
         print("设计数据已保存到 design.json")
         
-        # 立即返回接收成功响应
-        response = jsonify({
-            'status': 'success',
-            'message': '布局数据接收成功，开始后台处理'
-        })
+        # 运行布局布线
+        run_layout_routing('design.json', 'top_module')
         
-        # 在后台线程中运行布局布线程序
-        threading.Thread(
-            target=run_layout_routing,
-            args=('design.json', 'top_module'),
-            daemon=True
-        ).start()
+        # 读取布局和布线结果文件
+        try:
+            with open('Layout_after.json', 'r') as f:
+                layout_data = json.load(f)
+            with open('Route_after.json', 'r') as f:
+                route_data = json.load(f)
+            print ('布局布线结果读取成功')
+        except Exception as e:
+            return False, f"读取布局布线结果失败: {str(e)}"
         
-        return response
-    except Exception as e:
         return jsonify({
-            'status': 'error',
-            'message': f'保存设计数据时出错: {str(e)}'
-        }), 500
+            'status': 'success',
+            'message': '布局布线完成!',
+            'layout': layout_data,
+            'route': route_data
+        })
+    except Exception as e:
+        return False, f"app处理Verilog时出错: {str(e)}"
 
 # 新增的Verilog上传路由
 @app.route('/upload_verilog', methods=['POST'])
@@ -192,35 +196,25 @@ def upload_verilog():
     
     # 获取Verilog代码和新的参数
     verilog_code = request.json['verilog']
-    filename = request.json.get('filename', 'my_design')  # 默认为top_module
-    modulename = request.json.get('modulename', 'top_module')  # 默认为top_module
-    print(filename + ' <-' + modulename)
-    try:
-        # 在后台线程中处理Verilog
-        def process_in_thread():
-            success, message = process_verilog(verilog_code, filename, modulename)
-            print(message)
-        
-        threading.Thread(target=process_in_thread, daemon=True).start()
-        
+    filename = request.json.get('filename')  
+    modulename = request.json.get('modulename')
+    print('处理：' + filename + ' <-' + modulename)
+    # 处理Verilog代码
+    success, message = process_verilog(verilog_code, filename, modulename)
+    if success:
+        print('处理成功')
         return jsonify({
             'status': 'success',
-            'message': 'Verilog文件已接收，正在处理中...'
+            'message': 'Verilog处理成功，布局布线完成',
+            'layout': message['layout'],
+            'route': message['route']
         })
-    except Exception as e:
+    else:
+        print('处理失败')
         return jsonify({
             'status': 'error',
-            'message': f'处理Verilog时出错: {str(e)}'
+            'message': message
         }), 500
-
-@app.route('/status', methods=['GET'])
-def check_status():
-    # 检查布局布线程序是否仍在运行
-    # 实际应用中应实现更精确的状态跟踪
-    return jsonify({
-        'status': 'processing',
-        'message': '布局布线程序正在运行，请稍候...'
-    })
 
 # 新增路由：获取仿真数据
 @app.route('/get_simulation_data', methods=['POST'])
